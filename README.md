@@ -36,21 +36,29 @@ Contributor Receives XLM
 
 ---
 
-## 📸 Level 1 Evidence & Screenshots
+## 📸 Level 2 Evidence & Demonstration
+
+### 1. Level 2 On-Chain Bounty Dashboard & Soroban Escrow
+The dashboard displays bounties with live milestone progress indicators (`1 / 1 complete`), locked Soroban contract escrow balances, and direct links to the deployed contract on Stellar Expert (`CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52`).
+
+![Level 2 Dashboard & Escrow](docs/evidence/level2_dashboard.png)
+
+### 2. Live Demo Recording: Milestone Voting & Conditional Release
+Demonstrating the full Level 2 lifecycle: wallet connection, bounty creation, milestone submission with deliverable PR, multi-wallet community verification, threshold satisfaction, conditional payment unlock, and contract activity indexing.
+
+![Level 2 Workflow Demo](docs/evidence/level2_demo.webp)
+
+---
+
+## 📸 Level 1 Foundation Evidence
 
 ### 1. Wallet Connected & Live XLM Testnet Balance
-The user connects via Freighter or instant Testnet signer. The address is displayed in shortened form (`GD6D...F2DN`) with 1-click clipboard copy, and their authentic XLM balance (`9975.00 XLM`) is fetched directly from the Stellar Horizon RPC.
-
 ![Wallet Connected & Balance](docs/evidence/wallet_connected.png)
 
 ### 2. Transaction Confirmed on Stellar Testnet
-Upon entering a contribution (15 XLM) and signing, the transaction is submitted directly to the Stellar network ledger. The resulting transaction hash (`d0ed248c8119...`) is displayed with a direct link to Stellar Expert Explorer.
-
 ![Transaction Confirmed & Explorer Link](docs/evidence/fund_confirmation.png)
 
 ### 3. Responsive Mobile View
-The dashboard automatically scales to mobile viewports with flexible cards, responsive navbar, and full touch accessibility.
-
 ![Responsive Mobile Dashboard](docs/evidence/mobile_view.png)
 
 ---
