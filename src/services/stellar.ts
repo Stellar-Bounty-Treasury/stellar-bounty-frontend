@@ -4,13 +4,17 @@ import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api
 export const TESTNET_HORIZON_URL = 'https://horizon-testnet.stellar.org';
 export const TESTNET_PASSPHRASE = Networks.TESTNET;
 export const EXPLORER_BASE_URL = 'https://stellar.expert/explorer/testnet/tx';
+export const CONTRACT_EXPLORER_BASE_URL = 'https://stellar.expert/explorer/testnet/contract';
+export const SOROBAN_CONTRACT_ID =
+  import.meta.env.VITE_SOROBAN_CONTRACT_ID || 'CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52';
+export const SOROBAN_RPC_URL = 'https://soroban-testnet.stellar.org';
 
 export const horizonServer = new Horizon.Server(TESTNET_HORIZON_URL);
 
 export interface SubmitResult {
   successful: boolean;
   hash: string;
-  ledger: number;
+  ledger?: number;
   explorerUrl: string;
 }
 

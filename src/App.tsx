@@ -3,11 +3,13 @@ import { Navbar } from './components/Navbar';
 import { BountyCard } from './components/BountyCard';
 import { CreateBountyModal } from './components/CreateBountyModal';
 import { FundBountyModal } from './components/FundBountyModal';
+import { BountyDetailModal } from './components/BountyDetailModal';
 import { WalletConnectModal } from './components/WalletConnectModal';
 import { useWallet } from './context/WalletContext';
 import { api } from './services/api';
 import { Bounty } from './types';
-import { Plus, Search, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Search, Sparkles, AlertCircle, RefreshCw, Shield, Target } from 'lucide-react';
+import { SOROBAN_CONTRACT_ID, CONTRACT_EXPLORER_BASE_URL } from './services/stellar';
 
 export const App: React.FC = () => {
   const { isConnected } = useWallet();
@@ -19,6 +21,7 @@ export const App: React.FC = () => {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedBountyToFund, setSelectedBountyToFund] = useState<Bounty | null>(null);
+  const [selectedBountyForDetail, setSelectedBountyForDetail] = useState<Bounty | null>(null);
 
   // Filtering & search
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,17 +47,22 @@ export const App: React.FC = () => {
 
   const handleBountyCreated = (newBounty: Bounty) => {
     setBounties((prev) => [newBounty, ...prev]);
+    setSelectedBountyForDetail(newBounty);
   };
 
-  const handleBountyFunded = (updatedBounty: Bounty) => {
+  const handleBountyUpdated = (updatedBounty: Bounty) => {
     setBounties((prev) =>
       prev.map((b) => (b.id === updatedBounty.id ? { ...b, ...updatedBounty } : b))
     );
+    if (selectedBountyForDetail?.id === updatedBounty.id) {
+      setSelectedBountyForDetail(updatedBounty);
+    }
   };
 
   // Stats
   const totalFunded = bounties.reduce((sum, b) => sum + (b.funded_amount || 0), 0);
   const openBountiesCount = bounties.filter((b) => b.status === 'open').length;
+  const totalMilestonesCount = bounties.reduce((sum, b) => sum + (b.milestones?.length || 0), 0);
 
   // Filtered bounties
   const filteredBounties = bounties.filter((b) => {
@@ -79,10 +87,32 @@ export const App: React.FC = () => {
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
-          <h1 className="hero-title">Community-Funded Bounties on Stellar</h1>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span className="pill pill-network" style={{ padding: '4px 12px', fontSize: '0.78rem' }}>
+              Level 2 Yellow Belt
+            </span>
+            <a
+              href={`${CONTRACT_EXPLORER_BASE_URL}/${SOROBAN_CONTRACT_ID}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                fontSize: '0.75rem',
+                color: '#38bdf8',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                textDecoration: 'none',
+              }}
+            >
+              <Shield size={12} />
+              <span>Contract: {SOROBAN_CONTRACT_ID.slice(0, 6)}...{SOROBAN_CONTRACT_ID.slice(-4)}</span>
+            </a>
+          </div>
+
+          <h1 className="hero-title">Soroban-Enforced Bounty Treasury</h1>
           <p className="hero-subtitle">
-            Create decentralized bounties, reward open-source contributors, and fund milestone
-            deliverables directly using real Stellar Testnet transactions.
+            Community-funded bounties with conditional on-chain milestone escrow. Funds remain strictly
+            locked until decentralized community verification thresholds are satisfied.
           </p>
 
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
@@ -117,13 +147,19 @@ export const App: React.FC = () => {
               <span className="hero-stat-value" id="stats-total-funded" style={{ color: '#38bdf8' }}>
                 {totalFunded.toFixed(1)} XLM
               </span>
-              <span className="hero-stat-label">Total Funded</span>
+              <span className="hero-stat-label">Locked Escrow</span>
             </div>
             <div className="hero-stat-item">
               <span className="hero-stat-value" id="stats-open-bounties" style={{ color: '#10b981' }}>
                 {openBountiesCount}
               </span>
-              <span className="hero-stat-label">Open Bounties</span>
+              <span className="hero-stat-label">Active Bounties</span>
+            </div>
+            <div className="hero-stat-item">
+              <span className="hero-stat-value" id="stats-milestones-count" style={{ color: '#f59e0b' }}>
+                {totalMilestonesCount}
+              </span>
+              <span className="hero-stat-label">On-Chain Milestones</span>
             </div>
           </div>
         </div>
@@ -136,7 +172,7 @@ export const App: React.FC = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search bounties by title or keyword..."
+            placeholder="Search bounties by title or deliverable..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             id="search-bounties-input"
@@ -185,7 +221,7 @@ export const App: React.FC = () => {
       {/* Bounty Dashboard Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-          Loading Stellar Bounties...
+          Loading Stellar Bounties & On-Chain Milestones...
         </div>
       ) : filteredBounties.length === 0 ? (
         <div
@@ -215,6 +251,7 @@ export const App: React.FC = () => {
               key={bounty.id}
               bounty={bounty}
               onFundClick={(b) => setSelectedBountyToFund(b)}
+              onViewDetailsClick={(b) => setSelectedBountyForDetail(b)}
             />
           ))}
         </main>
@@ -236,10 +273,21 @@ export const App: React.FC = () => {
         bounty={selectedBountyToFund}
         isOpen={!!selectedBountyToFund}
         onClose={() => setSelectedBountyToFund(null)}
-        onSuccess={handleBountyFunded}
+        onSuccess={handleBountyUpdated}
         onOpenConnectModal={() => {
           setSelectedBountyToFund(null);
           setIsConnectModalOpen(true);
+        }}
+      />
+
+      <BountyDetailModal
+        bounty={selectedBountyForDetail}
+        isOpen={!!selectedBountyForDetail}
+        onClose={() => setSelectedBountyForDetail(null)}
+        onBountyUpdated={handleBountyUpdated}
+        onFundClick={(b) => {
+          setSelectedBountyForDetail(null);
+          setSelectedBountyToFund(b);
         }}
       />
     </div>

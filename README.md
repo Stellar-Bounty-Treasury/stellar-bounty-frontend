@@ -4,14 +4,35 @@ Modern React & TypeScript user interface for **Stellar Bounty Treasury**, demons
 
 ---
 
-## 📌 Project Overview
+## 📌 What It Does — Level 2 (Yellow Belt)
 
-At **Level 1 (White Belt)**, this application proves the end-to-end payment flow on the Stellar Testnet:
+At **Level 2**, this application transforms into an interactive on-chain bounty management platform:
 
-**Connect Wallet → View XLM Balance → Create Bounty → Discover Bounties → Fund Bounty → Confirm On-Chain Transaction**
+> **The contract enforces. The backend observes. The frontend orchestrates.**
 
-* ❌ **No fake transactions**: Every contribution is an authentic on-chain Stellar transaction signed and submitted to the Testnet ledger.
-* ❌ **No mocked hashes**: Resulting hashes are verifiable on Stellar.Expert testnet explorer.
+```text
+Create Bounty
+      ↓
+Fund Bounty (Locked in Soroban Escrow)
+      ↓
+Create Milestones
+      ↓
+Submit Milestone Evidence (GitHub PR / CID)
+      ↓
+Community Verification (Wallet Signed)
+      ↓
+Approval Threshold Reached
+      ↓
+Conditional Payment Release Authorized
+      ↓
+Contributor Receives XLM
+```
+
+* **Authoritative Soroban Escrow**: Funds are locked in contract `CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52` on Stellar Testnet.
+* **On-Chain Milestone Governance**: Milestones have verifiable delivery evidence references and cryptographic verification thresholds.
+* **Wallet-Signed Community Voting**: Reviewers vote Approve/Reject directly with their Stellar wallet signatures; duplicate votes are rejected.
+* **Conditional Payment Release**: Settlement buttons remain strictly locked until the approval threshold is satisfied.
+* **Contract Activity Feed**: Live feed of indexed Soroban contract events (`bounty_funded`, `milestone_submitted`, `milestone_approved`, `milestone_paid`).
 
 ---
 
@@ -34,67 +55,7 @@ The dashboard automatically scales to mobile viewports with flexible cards, resp
 
 ---
 
-## ✨ Features
-
-1. **Stellar Wallet Integration**:
-   * Connect via **Freighter Wallet** browser extension.
-   * Instant **Testnet Dev Signer** mode with 1-click Friendbot funding (10,000 testnet XLM).
-   * Shortened address display (`GAB3...X7KD`) with 1-click clipboard copy.
-   * Graceful disconnect and reconnect without breaking application state.
-
-2. **Live XLM Balance**:
-   * Directly queries the Stellar Horizon Testnet RPC (`https://horizon-testnet.stellar.org`).
-   * Auto-refreshes balance after transaction confirmation.
-
-3. **Bounty Creation**:
-   * Create community bounties with title, description, target amount, and creator address.
-
-4. **Bounty Discovery & Filtering**:
-   * Real-time search across titles and descriptions.
-   * Status filter pills: `ALL`, `OPEN`, `FUNDED`.
-   * Dynamic progress bar showing % funded and remaining target.
-
-5. **Real Stellar Testnet Funding**:
-   * Amount input with balance validation and reserve fee protection.
-   * Builds and submits native XLM payment operations to the Stellar Testnet.
-   * Displays confirmed transaction hash and direct link to Stellar Expert Explorer.
-
----
-
-## 🏗️ Architecture & Component Hierarchy
-
-```text
-stellar-bounty-frontend/
-├── src/
-│   ├── components/
-│   │   ├── Navbar.tsx             # Wallet status, balance pill, network badge
-│   │   ├── BountyCard.tsx         # Bounty card, progress bar, creator copy, fund trigger
-│   │   ├── CreateBountyModal.tsx  # Bounty creation form & validation
-│   │   ├── FundBountyModal.tsx    # Payment input, fee checks, Testnet signer, explorer link
-│   │   └── WalletConnectModal.tsx # Freighter & Testnet Keypair connection options
-│   ├── context/
-│   │   └── WalletContext.tsx      # Global wallet state & Horizon balance sync
-│   ├── services/
-│   │   ├── api.ts                 # Backend REST client (port 5000)
-│   │   └── stellar.ts             # Stellar Horizon RPC, Freighter API, transaction builder
-│   ├── test/
-│   │   └── validation.test.ts     # Vitest suite covering amounts, reserves, address shortening
-│   ├── types/
-│   │   └── index.ts               # Bounty, Contribution, WalletState interfaces
-│   ├── index.css                  # Custom design system with glassmorphic tokens & dark mode
-│   ├── App.tsx                    # Main dashboard layout, stats counters, search filters
-│   └── main.tsx                   # React root entrypoint
-├── docs/
-│   └── evidence/                  # Working application screenshots
-├── .env.example
-├── vite.config.ts
-├── tsconfig.json
-└── package.json
-```
-
----
-
-## 🚀 Getting Started
+## 🚀 How to Run It
 
 ### Prerequisites
 
@@ -106,17 +67,6 @@ stellar-bounty-frontend/
 
 ```bash
 npm install
-```
-
-### Environment Setup
-
-Create `.env` based on `.env.example`:
-
-```bash
-VITE_API_URL=http://localhost:5000
-VITE_STELLAR_NETWORK=TESTNET
-VITE_HORIZON_URL=https://horizon-testnet.stellar.org
-VITE_EXPLORER_URL=https://stellar.expert/explorer/testnet/tx
 ```
 
 ### Development Server
@@ -133,9 +83,86 @@ Application runs on `http://localhost:3000`.
 npm test
 ```
 
+### Production Build
+
+```bash
+npm run build
+npm run preview
+```
+
 ---
 
-## 🔄 Progression to Level 2 and Level 3
+## ⚙️ Required Environment Variables
+
+Create `.env` based on `.env.example`:
+
+```bash
+# Backend API service URL
+VITE_API_URL=http://localhost:5000
+
+# Stellar & Soroban Testnet configuration
+VITE_STELLAR_NETWORK=TESTNET
+VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+VITE_SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+VITE_SOROBAN_CONTRACT_ID=CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52
+VITE_EXPLORER_URL=https://stellar.expert/explorer/testnet/tx
+VITE_CONTRACT_EXPLORER_URL=https://stellar.expert/explorer/testnet/contract
+```
+
+---
+
+## 👛 How to Connect a Stellar Testnet Wallet
+
+1. Click **"Connect Wallet"** in the top navigation bar or the hero section.
+2. Select your preferred method:
+   * **Freighter Wallet**: Connect using the official Stellar browser extension. Ensure Freighter network is set to "Testnet".
+   * **Instant Testnet Wallet**: Click "Instant Testnet Wallet" to automatically generate a cryptographic keypair and fund it with 10,000 XLM via Friendbot.
+   * **Import Secret Key**: Enter an existing Testnet secret key (`S...`) to sign transactions directly.
+3. Once connected, your shortened address (`G...`) and live XLM balance from Stellar Testnet Horizon will be displayed in the navbar.
+4. You can disconnect at any time using the disconnect button without breaking application state.
+
+---
+
+## 📝 How to Create a Bounty
+
+1. Click **"Create Bounty"** in the hero section or top action bar.
+2. Complete the form:
+   * **Title**: Descriptive name for the bounty.
+   * **Description**: Detailed requirements and deliverable criteria.
+   * **Funding Target**: Amount of XLM required.
+   * **Creator Address**: Your Stellar Testnet public address (auto-populated if wallet is connected).
+3. Click **"Create Bounty"**. The bounty is validated, persisted in the backend database, and immediately displayed on the dashboard.
+
+---
+
+## 💸 How to Fund a Bounty
+
+1. Browse the bounties on the dashboard.
+2. Click **"Fund Bounty"** on any open bounty card.
+3. Enter your contribution amount (e.g., `15 XLM`) or select a quick preset (`+10`, `+25`, `+50`, `+100`).
+4. The application validates your amount against your available balance and checks for network reserve fees.
+5. Click **"Sign & Fund Bounty"**.
+6. The application constructs a native XLM payment operation, requests your wallet signature, and submits it to Stellar Testnet Horizon.
+7. Wait 3–5 seconds for ledger confirmation.
+8. Upon confirmation, the modal displays the authentic transaction hash and a direct link to the Stellar Explorer, and the bounty funding progress updates instantly.
+
+---
+
+## 🔍 How to Verify a Transaction
+
+1. In the confirmation modal, click **"View on Stellar Explorer →"**.
+2. Alternatively, copy the 64-character transaction hash and navigate to:
+   `https://stellar.expert/explorer/testnet/tx/<TRANSACTION_HASH>`
+3. Verify on Stellar Expert:
+   * **Status**: Successful
+   * **Source Account**: Your connected contributor address
+   * **Operation**: Payment of native XLM
+   * **Destination**: The bounty creator address
+   * **Ledger**: Confirmed on live Testnet ledger number
+
+---
+
+## 🔄 How the Repository Will Evolve in Levels 2 and 3
 
 * **Level 2**:
   - Connect to Soroban Escrow Smart Contracts via contract invocations rather than direct peer-to-peer transfers.

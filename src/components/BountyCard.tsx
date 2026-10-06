@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { Bounty } from '../types';
-import { Copy, Check, ArrowUpRight } from 'lucide-react';
+import { Copy, Check, ArrowUpRight, Target, ShieldCheck, ChevronRight } from 'lucide-react';
 
 interface BountyCardProps {
   bounty: Bounty;
   onFundClick: (bounty: Bounty) => void;
+  onViewDetailsClick: (bounty: Bounty) => void;
 }
 
-export const BountyCard: React.FC<BountyCardProps> = ({ bounty, onFundClick }) => {
+export const BountyCard: React.FC<BountyCardProps> = ({
+  bounty,
+  onFundClick,
+  onViewDetailsClick,
+}) => {
   const [copied, setCopied] = useState(false);
 
   const shortenAddress = (addr: string) => {
@@ -27,12 +32,27 @@ export const BountyCard: React.FC<BountyCardProps> = ({ bounty, onFundClick }) =
   );
 
   const isFunded = bounty.status === 'funded' || bounty.funded_amount >= bounty.target_amount;
+  const milestones = bounty.milestones || [];
+  const completedMilestones = milestones.filter((m) => m.status === 'paid').length;
+  const totalMilestones = milestones.length;
 
   return (
-    <div className="glass-panel bounty-card" id={`bounty-card-${bounty.id}`}>
+    <div
+      className="glass-panel bounty-card"
+      id={`bounty-card-${bounty.id}`}
+      style={{ cursor: 'pointer' }}
+      onClick={() => onViewDetailsClick(bounty)}
+    >
       <div>
         <div className="card-header">
-          <h3 className="card-title">{bounty.title}</h3>
+          <div>
+            <h3 className="card-title">{bounty.title}</h3>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
+              <span className="pill pill-network" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                Soroban Escrow
+              </span>
+            </div>
+          </div>
           <span
             className={`status-badge ${isFunded ? 'status-funded' : 'status-open'}`}
             id={`bounty-status-${bounty.id}`}
@@ -67,7 +87,30 @@ export const BountyCard: React.FC<BountyCardProps> = ({ bounty, onFundClick }) =
           </div>
         </div>
 
-        {/* Footer with Creator & Fund Action */}
+        {/* Milestone Indicator */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 10px',
+            marginBottom: 12,
+            borderRadius: 6,
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--border-color)',
+            fontSize: '0.78rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+            <Target size={13} color="#38bdf8" />
+            <span>Milestone Progress:</span>
+          </div>
+          <span style={{ fontWeight: 600, color: totalMilestones > 0 ? '#38bdf8' : 'var(--text-muted)' }}>
+            {totalMilestones > 0 ? `${completedMilestones} / ${totalMilestones} complete` : 'No milestones yet'}
+          </span>
+        </div>
+
+        {/* Footer with Creator & Actions */}
         <div className="card-footer">
           <div className="creator-info" title={`Creator: ${bounty.creator_address}`}>
             <span>by</span>
@@ -82,16 +125,34 @@ export const BountyCard: React.FC<BountyCardProps> = ({ bounty, onFundClick }) =
             </button>
           </div>
 
-          <button
-            className="btn btn-primary"
-            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-            onClick={() => onFundClick(bounty)}
-            disabled={isFunded}
-            id={`fund-bounty-btn-${bounty.id}`}
-          >
-            <span>{isFunded ? 'Completed' : 'Fund Bounty'}</span>
-            {!isFunded && <ArrowUpRight size={14} />}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-secondary"
+              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetailsClick(bounty);
+              }}
+              id={`view-bounty-btn-${bounty.id}`}
+            >
+              <span>Details</span>
+              <ChevronRight size={13} />
+            </button>
+
+            <button
+              className="btn btn-primary"
+              style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onFundClick(bounty);
+              }}
+              disabled={isFunded}
+              id={`fund-bounty-btn-${bounty.id}`}
+            >
+              <span>{isFunded ? 'Funded' : 'Fund'}</span>
+              {!isFunded && <ArrowUpRight size={13} />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

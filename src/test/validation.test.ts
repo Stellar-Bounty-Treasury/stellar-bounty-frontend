@@ -100,4 +100,55 @@ describe('Frontend Validation & Logic Tests', () => {
       expect(progress.status).toBe('funded');
     });
   });
+
+  describe('Level 2 Milestone & Conditional Payment Logic', () => {
+    function evaluateConditionalSettlement(
+      approvals: number,
+      threshold: number,
+      status: string
+    ): {
+      isUnlocked: boolean;
+      percent: number;
+      needed: number;
+      message: string;
+    } {
+      const needed = Math.max(0, threshold - approvals);
+      const percent = Math.min(100, Math.round((approvals / (threshold || 1)) * 100));
+      const isUnlocked = approvals >= threshold && status !== 'paid';
+
+      return {
+        isUnlocked,
+        percent,
+        needed,
+        message:
+          status === 'paid'
+            ? 'Payment Settled On-Chain'
+            : isUnlocked
+            ? 'Verification requirement satisfied'
+            : `Payment Locked — ${needed} additional approval required`,
+      };
+    }
+
+    it('enforces locked payment state when approvals are below threshold', () => {
+      const state = evaluateConditionalSettlement(1, 2, 'under_review');
+      expect(state.isUnlocked).toBe(false);
+      expect(state.needed).toBe(1);
+      expect(state.percent).toBe(50);
+      expect(state.message).toContain('Payment Locked');
+    });
+
+    it('unlocks payment settlement when approval threshold is satisfied', () => {
+      const state = evaluateConditionalSettlement(2, 2, 'approved');
+      expect(state.isUnlocked).toBe(true);
+      expect(state.needed).toBe(0);
+      expect(state.percent).toBe(100);
+      expect(state.message).toContain('Verification requirement satisfied');
+    });
+
+    it('marks settlement finalized when status is paid', () => {
+      const state = evaluateConditionalSettlement(3, 2, 'paid');
+      expect(state.isUnlocked).toBe(false);
+      expect(state.message).toContain('Payment Settled');
+    });
+  });
 });
