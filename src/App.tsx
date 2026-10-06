@@ -5,17 +5,28 @@ import { CreateBountyModal } from './components/CreateBountyModal';
 import { FundBountyModal } from './components/FundBountyModal';
 import { BountyDetailModal } from './components/BountyDetailModal';
 import { WalletConnectModal } from './components/WalletConnectModal';
+import { TreasuryDashboard } from './components/TreasuryDashboard';
 import { useWallet } from './context/WalletContext';
 import { api } from './services/api';
-import { Bounty } from './types';
-import { Plus, Search, Sparkles, AlertCircle, RefreshCw, Shield, Target } from 'lucide-react';
-import { SOROBAN_CONTRACT_ID, CONTRACT_EXPLORER_BASE_URL } from './services/stellar';
+import { Bounty, TreasuryStats } from './types';
+import { Plus, Search, Sparkles, AlertCircle, RefreshCw, Radio } from 'lucide-react';
+import { SOROBAN_CONTRACT_ID } from './services/stellar';
 
 export const App: React.FC = () => {
   const { isConnected } = useWallet();
   const [bounties, setBounties] = useState<Bounty[]>([]);
+  const [stats, setStats] = useState<TreasuryStats>({
+    total_funds: 0,
+    total_bounties: 0,
+    active_bounties: 0,
+    completed_bounties: 0,
+    pending_milestones: 0,
+    pending_settlements: 0,
+    total_distributed: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [realtimeNotice, setRealtimeNotice] = useState<string | null>(null);
 
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -25,16 +36,17 @@ export const App: React.FC = () => {
 
   // Filtering & search
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'funded'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'open' | 'funded' | 'completed'>('all');
 
-  const loadBounties = async () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getBounties();
-      setBounties(data);
+      const [bData, sData] = await Promise.all([api.getBounties(), api.getTreasuryStats()]);
+      setBounties(bData);
+      setStats(sData);
     } catch (err: any) {
-      console.error('Failed to load bounties:', err);
+      console.error('Failed to load bounties and stats:', err);
       setError(err.message || 'Unable to connect to backend service.');
     } finally {
       setLoading(false);
@@ -42,12 +54,25 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadBounties();
+    loadData();
+
+    // Subscribe to backend realtime SSE stream
+    const unsubscribe = api.subscribeRealtimeEvents((event) => {
+      console.log('⚡ Realtime event received:', event);
+      setRealtimeNotice(`Live Blockchain Event: ${event.type || 'state_update'}`);
+      setTimeout(() => setRealtimeNotice(null), 4000);
+      loadData();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleBountyCreated = (newBounty: Bounty) => {
     setBounties((prev) => [newBounty, ...prev]);
     setSelectedBountyForDetail(newBounty);
+    loadData();
   };
 
   const handleBountyUpdated = (updatedBounty: Bounty) => {
@@ -57,12 +82,8 @@ export const App: React.FC = () => {
     if (selectedBountyForDetail?.id === updatedBounty.id) {
       setSelectedBountyForDetail(updatedBounty);
     }
+    loadData();
   };
-
-  // Stats
-  const totalFunded = bounties.reduce((sum, b) => sum + (b.funded_amount || 0), 0);
-  const openBountiesCount = bounties.filter((b) => b.status === 'open').length;
-  const totalMilestonesCount = bounties.reduce((sum, b) => sum + (b.milestones?.length || 0), 0);
 
   // Filtered bounties
   const filteredBounties = bounties.filter((b) => {
@@ -72,9 +93,11 @@ export const App: React.FC = () => {
     const matchesFilter =
       filterStatus === 'all'
         ? true
+        : filterStatus === 'completed'
+        ? b.status === 'completed'
         : filterStatus === 'funded'
-        ? b.status === 'funded' || b.funded_amount >= b.target_amount
-        : b.status === 'open' && b.funded_amount < b.target_amount;
+        ? b.status === 'funded'
+        : b.status === 'open';
 
     return matchesSearch && matchesFilter;
   });
@@ -84,45 +107,51 @@ export const App: React.FC = () => {
       {/* Navigation */}
       <Navbar onOpenConnectModal={() => setIsConnectModalOpen(true)} />
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <span className="pill pill-network" style={{ padding: '4px 12px', fontSize: '0.78rem' }}>
-              Level 2 Yellow Belt
-            </span>
-            <a
-              href={`${CONTRACT_EXPLORER_BASE_URL}/${SOROBAN_CONTRACT_ID}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                fontSize: '0.75rem',
-                color: '#38bdf8',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                textDecoration: 'none',
-              }}
-            >
-              <Shield size={12} />
-              <span>Contract: {SOROBAN_CONTRACT_ID.slice(0, 6)}...{SOROBAN_CONTRACT_ID.slice(-4)}</span>
-            </a>
-          </div>
+      {/* Realtime Notification Banner */}
+      {realtimeNotice && (
+        <div
+          style={{
+            background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.9))',
+            color: '#000',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginBottom: '1rem',
+            boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)',
+          }}
+        >
+          <Radio size={14} className="spinner" />
+          <span>{realtimeNotice}</span>
+        </div>
+      )}
 
-          <h1 className="hero-title">Soroban-Enforced Bounty Treasury</h1>
-          <p className="hero-subtitle">
-            Community-funded bounties with conditional on-chain milestone escrow. Funds remain strictly
-            locked until decentralized community verification thresholds are satisfied.
+      {/* Treasury Dashboard Metric Bar */}
+      <TreasuryDashboard stats={stats} network="Stellar Testnet" onRefresh={loadData} />
+
+      {/* Hero Section */}
+      <section className="hero" style={{ padding: '2rem 0', marginBottom: '1.5rem' }}>
+        <div className="hero-content">
+          <h1 className="hero-title" style={{ fontSize: '2.2rem', marginBottom: '0.75rem' }}>
+            Programmable Bounty Treasury & Settlement Router
+          </h1>
+          <p className="hero-subtitle" style={{ maxWidth: '800px', margin: '0 auto 1.5rem auto' }}>
+            Community-funded bounty escrow on Stellar. Milestone deliverables trigger cryptographic community
+            verification, routing released funds across multiple contributors through authoritative Soroban settlement contracts.
           </p>
 
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               className="btn btn-primary"
               onClick={() => setIsCreateModalOpen(true)}
               id="hero-create-bounty-btn"
             >
               <Plus size={18} />
-              <span>Create Bounty</span>
+              <span>Create Programmable Bounty</span>
             </button>
             {!isConnected && (
               <button
@@ -135,33 +164,6 @@ export const App: React.FC = () => {
               </button>
             )}
           </div>
-
-          <div className="hero-stats">
-            <div className="hero-stat-item">
-              <span className="hero-stat-value" id="stats-total-bounties">
-                {bounties.length}
-              </span>
-              <span className="hero-stat-label">Total Bounties</span>
-            </div>
-            <div className="hero-stat-item">
-              <span className="hero-stat-value" id="stats-total-funded" style={{ color: '#38bdf8' }}>
-                {totalFunded.toFixed(1)} XLM
-              </span>
-              <span className="hero-stat-label">Locked Escrow</span>
-            </div>
-            <div className="hero-stat-item">
-              <span className="hero-stat-value" id="stats-open-bounties" style={{ color: '#10b981' }}>
-                {openBountiesCount}
-              </span>
-              <span className="hero-stat-label">Active Bounties</span>
-            </div>
-            <div className="hero-stat-item">
-              <span className="hero-stat-value" id="stats-milestones-count" style={{ color: '#f59e0b' }}>
-                {totalMilestonesCount}
-              </span>
-              <span className="hero-stat-label">On-Chain Milestones</span>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -172,15 +174,15 @@ export const App: React.FC = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search bounties by title or deliverable..."
+            placeholder="Search bounties by title, recipient, or deliverable..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             id="search-bounties-input"
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {(['all', 'open', 'funded'] as const).map((status) => (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          {(['all', 'open', 'funded', 'completed'] as const).map((status) => (
             <button
               key={status}
               className={`pill ${
@@ -190,17 +192,18 @@ export const App: React.FC = () => {
                 cursor: 'pointer',
                 opacity: filterStatus === status ? 1 : 0.6,
                 border: filterStatus === status ? '1px solid var(--primary)' : undefined,
+                textTransform: 'uppercase',
               }}
               onClick={() => setFilterStatus(status)}
               id={`filter-${status}-btn`}
             >
-              {status.toUpperCase()}
+              {status}
             </button>
           ))}
 
           <button
             className="btn btn-secondary"
-            onClick={loadBounties}
+            onClick={loadData}
             title="Refresh bounty dashboard"
             id="refresh-bounties-btn"
             style={{ padding: '8px 12px' }}
@@ -214,14 +217,14 @@ export const App: React.FC = () => {
       {error && (
         <div className="error-banner" style={{ marginBottom: 24 }}>
           <AlertCircle size={20} />
-          <span>{error} — Make sure the backend server is running on port 5000.</span>
+          <span>{error} — Running in offline / autonomous smart contract fallback mode.</span>
         </div>
       )}
 
       {/* Bounty Dashboard Grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-          Loading Stellar Bounties & On-Chain Milestones...
+          Loading Stellar Bounties & Settlement Routers...
         </div>
       ) : filteredBounties.length === 0 ? (
         <div
@@ -232,7 +235,7 @@ export const App: React.FC = () => {
           <h3 style={{ fontSize: '1.25rem', marginBottom: 8 }}>No Bounties Found</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
             {bounties.length === 0
-              ? 'Be the first to launch a community-funded bounty on Stellar!'
+              ? 'Be the first to launch a programmable community-funded bounty on Stellar!'
               : 'No bounties match your current search query or filter.'}
           </p>
           <button

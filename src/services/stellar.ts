@@ -1,5 +1,9 @@
-import { Horizon, Networks, TransactionBuilder, Operation, Asset, Keypair } from '@stellar/stellar-sdk';
+import { Horizon, Networks, TransactionBuilder, Operation, Asset, Keypair, StrKey } from '@stellar/stellar-sdk';
 import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
+
+export function isValidStellarAddress(address: string): boolean {
+  return typeof address === 'string' && address.length === 56 && address.startsWith('G') && StrKey.isValidEd25519PublicKey(address);
+}
 
 export const TESTNET_HORIZON_URL = 'https://horizon-testnet.stellar.org';
 export const TESTNET_PASSPHRASE = Networks.TESTNET;

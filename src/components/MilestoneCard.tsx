@@ -1,33 +1,31 @@
 import React, { useState } from 'react';
-import { Milestone, Verification } from '../types';
+import { Milestone } from '../types';
 import { useWallet } from '../context/WalletContext';
 import { api } from '../services/api';
 import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Lock,
-  Unlock,
   ExternalLink,
   ThumbsUp,
   ThumbsDown,
   Loader2,
   Send,
-  AlertCircle,
-  Shield,
   Coins,
 } from 'lucide-react';
+import { SettlementFlowVisualizer } from './SettlementFlowVisualizer';
 
 interface MilestoneCardProps {
   milestone: Milestone;
   onUpdate: (updated: Milestone) => void;
   onSubmitClick: (milestone: Milestone) => void;
+  onConfigureRouterClick?: (milestone: Milestone) => void;
+  onPreviewSettlementClick?: (milestone: Milestone) => void;
 }
 
 export const MilestoneCard: React.FC<MilestoneCardProps> = ({
   milestone,
   onUpdate,
   onSubmitClick,
+  onConfigureRouterClick,
+  onPreviewSettlementClick,
 }) => {
   const { isConnected, address } = useWallet();
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -55,7 +53,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
       case 'approved':
         return <span className="status-badge status-funded">APPROVED</span>;
       case 'paid':
-        return <span className="status-badge" style={{ background: 'rgba(16, 185, 129, 0.25)', color: '#10b981' }}>PAID</span>;
+        return <span className="status-badge" style={{ background: 'rgba(16, 185, 129, 0.25)', color: '#10b981' }}>PAID & SETTLED</span>;
       case 'rejected':
         return <span className="status-badge" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>REJECTED</span>;
       default:
@@ -89,28 +87,6 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
     }
   };
 
-  const handleReleasePayment = async () => {
-    if (!isThresholdMet || milestone.status === 'paid') return;
-
-    setLoadingAction('release');
-    setActionError(null);
-    setActionSuccess(null);
-
-    try {
-      const res = await api.releaseMilestonePayment(milestone.id, {
-        caller_address: address || undefined,
-        transaction_hash: `settle-tx-${Date.now()}`,
-      });
-
-      onUpdate(res.milestone);
-      setActionSuccess(`Payment released! ${milestone.reward_amount} XLM transferred to ${shortenAddress(milestone.recipient_address)}`);
-    } catch (err: any) {
-      setActionError(err.message || 'Payment release failed.');
-    } finally {
-      setLoadingAction(null);
-    }
-  };
-
   return (
     <div
       className="glass-panel"
@@ -130,6 +106,21 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
               Milestone #{milestone.contract_milestone_id}
             </span>
             {getStatusBadge()}
+            {milestone.settlement && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  color: '#fbbf24',
+                }}
+              >
+                🔀 Router: {milestone.settlement.recipients.length} Recipients
+              </span>
+            )}
           </div>
           <p style={{ marginTop: 6, fontSize: '0.88rem', color: 'var(--text-main)' }}>
             {milestone.description}
@@ -140,156 +131,93 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
             {milestone.reward_amount} XLM
           </span>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            to {shortenAddress(milestone.recipient_address)}
+            Designated: {shortenAddress(milestone.recipient_address)}
           </div>
         </div>
       </div>
 
-      {/* Submission Evidence */}
-      {milestone.submission_reference && (
+      {actionError && (
+        <div style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', fontSize: '0.78rem', marginBottom: 8 }}>
+          {actionError}
+        </div>
+      )}
+      {actionSuccess && (
+        <div style={{ padding: '6px 10px', borderRadius: 6, background: 'rgba(16, 185, 129, 0.15)', color: '#86efac', fontSize: '0.78rem', marginBottom: 8 }}>
+          {actionSuccess}
+        </div>
+      )}
+
+      {/* Deliverable Evidence */}
+      {milestone.submission_reference && milestone.submission_reference !== 'none' && (
         <div
           style={{
             padding: '8px 12px',
+            marginBottom: 10,
             borderRadius: 8,
-            background: 'rgba(56, 189, 248, 0.06)',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
+            background: 'rgba(0, 0, 0, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
             fontSize: '0.8rem',
-            marginBottom: 12,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Deliverable Evidence:</span>
+          <span style={{ color: 'var(--text-muted)' }}>Deliverable Evidence:</span>
+          {milestone.submission_reference.startsWith('http') ? (
             <a
               href={milestone.submission_reference}
               target="_blank"
               rel="noreferrer"
-              style={{ color: '#38bdf8', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', fontWeight: 600 }}
             >
-              <span style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {milestone.submission_reference}
-              </span>
+              <span>View GitHub Deliverable</span>
               <ExternalLink size={12} />
             </a>
-          </div>
-          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>SUBMITTED</span>
+          ) : (
+            <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>{milestone.submission_reference}</span>
+          )}
         </div>
       )}
 
-      {/* Approval Threshold Progress */}
+      {/* Verification Voting Progress Bar */}
       <div style={{ marginBottom: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-          <span>Community Approvals: {approvalCount} / {threshold} required</span>
-          <span>{approvalPercent}%</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>
+          <span>Verification Threshold ({approvalCount} / {threshold} Approvals)</span>
+          <span style={{ fontWeight: 600, color: isThresholdMet ? 'var(--success)' : '#f59e0b' }}>
+            {approvalPercent}% {isThresholdMet ? '• Quorum Reached' : ''}
+          </span>
         </div>
-        <div className="progress-bar-bg" style={{ height: 6 }}>
+        <div style={{ height: 6, borderRadius: 3, background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
           <div
-            className="progress-bar-fill"
             style={{
+              height: '100%',
               width: `${approvalPercent}%`,
-              backgroundColor: isThresholdMet ? 'var(--success)' : '#f59e0b',
+              background: isThresholdMet ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #f59e0b, #d97706)',
+              borderRadius: 3,
+              transition: 'width 0.4s ease',
             }}
           />
         </div>
       </div>
 
-      {/* Feedback Messages */}
-      {actionError && (
-        <div className="error-banner" style={{ marginBottom: 10, padding: 8, fontSize: '0.8rem' }}>
-          <AlertCircle size={14} />
-          <span>{actionError}</span>
-        </div>
-      )}
+      {/* Embedded Settlement Flow Visualizer */}
+      {milestone.settlement && <SettlementFlowVisualizer settlement={milestone.settlement} />}
 
-      {actionSuccess && (
-        <div
-          className="glass-panel"
-          style={{
-            marginBottom: 10,
-            padding: 8,
-            fontSize: '0.8rem',
-            background: 'rgba(16, 185, 129, 0.1)',
-            borderColor: 'var(--success)',
-            color: 'var(--success)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          <CheckCircle2 size={14} />
-          <span>{actionSuccess}</span>
-        </div>
-      )}
-
-      {/* Conditional Settlement Status Banner */}
-      <div
-        style={{
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 12,
-          fontSize: '0.82rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: milestone.status === 'paid'
-            ? 'rgba(16, 185, 129, 0.1)'
-            : isThresholdMet
-            ? 'rgba(16, 185, 129, 0.08)'
-            : 'rgba(239, 68, 68, 0.08)',
-          border: `1px solid ${
-            milestone.status === 'paid' || isThresholdMet ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.25)'
-          }`,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {milestone.status === 'paid' ? (
-            <>
-              <CheckCircle2 size={16} color="var(--success)" />
-              <span style={{ color: 'var(--success)', fontWeight: 600 }}>Payment Settled On-Chain</span>
-            </>
-          ) : isThresholdMet ? (
-            <>
-              <Unlock size={16} color="var(--success)" />
-              <span style={{ color: 'var(--success)', fontWeight: 600 }}>✓ Verification requirement satisfied</span>
-            </>
-          ) : (
-            <>
-              <Lock size={16} color="#ef4444" />
-              <span style={{ color: '#ef4444', fontWeight: 600 }}>
-                🔒 Payment Locked — {threshold - approvalCount} additional approval required
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Conditional Settlement Action */}
-        {milestone.status === 'approved' && isThresholdMet && (
+      {/* Actions Bar */}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: 12 }}>
+        {/* Configure Settlement Router Button */}
+        {milestone.status !== 'paid' && onConfigureRouterClick && (
           <button
-            className="btn btn-primary"
-            style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-            onClick={handleReleasePayment}
-            disabled={loadingAction === 'release'}
-            id={`release-payment-btn-${milestone.id}`}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '0.78rem', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+            onClick={() => onConfigureRouterClick(milestone)}
+            id={`configure-router-btn-${milestone.id}`}
           >
-            {loadingAction === 'release' ? (
-              <>
-                <Loader2 size={13} className="spinner" />
-                <span>Releasing...</span>
-              </>
-            ) : (
-              <>
-                <Coins size={13} />
-                <span>Release Payment</span>
-              </>
-            )}
+            🔀 Configure Router
           </button>
         )}
-      </div>
 
-      {/* Action Buttons */}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+        {/* Submit Deliverable */}
         {milestone.status === 'pending' && (
           <button
             className="btn btn-primary"
@@ -302,6 +230,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
           </button>
         )}
 
+        {/* Community Verification Voting */}
         {(milestone.status === 'submitted' || milestone.status === 'under_review') && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -343,6 +272,25 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
               <span>Reject</span>
             </button>
           </div>
+        )}
+
+        {/* Preview & Execute Settlement (when approved) */}
+        {milestone.status === 'approved' && onPreviewSettlementClick && (
+          <button
+            className="btn btn-primary"
+            style={{
+              padding: '6px 14px',
+              fontSize: '0.8rem',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              border: 'none',
+              boxShadow: '0 0 10px rgba(16, 185, 129, 0.4)',
+            }}
+            onClick={() => onPreviewSettlementClick(milestone)}
+            id={`settlement-preview-btn-${milestone.id}`}
+          >
+            <Coins size={14} />
+            <span>Preview & Execute Settlement</span>
+          </button>
         )}
       </div>
     </div>

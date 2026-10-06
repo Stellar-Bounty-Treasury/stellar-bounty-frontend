@@ -4,12 +4,13 @@ import { api } from '../services/api';
 import { MilestoneCard } from './MilestoneCard';
 import { CreateMilestoneModal } from './CreateMilestoneModal';
 import { SubmitMilestoneModal } from './SubmitMilestoneModal';
+import { SettlementBuilderModal } from './SettlementBuilderModal';
+import { SettlementPreviewModal } from './SettlementPreviewModal';
 import { ActivityFeed } from './ActivityFeed';
 import {
   X,
   Plus,
   RefreshCw,
-  Shield,
   ExternalLink,
   Target,
   Activity,
@@ -17,6 +18,8 @@ import {
   Coins,
   Copy,
   Check,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import { CONTRACT_EXPLORER_BASE_URL, SOROBAN_CONTRACT_ID } from '../services/stellar';
 
@@ -45,6 +48,8 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
   // Sub-modals
   const [isCreateMilestoneOpen, setIsCreateMilestoneOpen] = useState(false);
   const [selectedMilestoneToSubmit, setSelectedMilestoneToSubmit] = useState<Milestone | null>(null);
+  const [selectedMilestoneToConfigureRouter, setSelectedMilestoneToConfigureRouter] = useState<Milestone | null>(null);
+  const [selectedMilestoneToPreviewSettlement, setSelectedMilestoneToPreviewSettlement] = useState<Milestone | null>(null);
 
   const contractAddress = bounty?.contract_id || SOROBAN_CONTRACT_ID;
 
@@ -83,187 +88,246 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
     }
   };
 
-  const handleMilestoneCreated = (newMilestone: Milestone) => {
-    setMilestones((prev) => [...prev, newMilestone]);
-    loadDetails();
-  };
-
-  const handleMilestoneUpdated = (updated: Milestone) => {
-    setMilestones((prev) =>
-      prev.map((m) => (m.id === updated.id ? updated : m))
-    );
-    loadDetails();
-  };
-
   const handleCopyContract = () => {
     navigator.clipboard.writeText(contractAddress);
     setCopiedContract(true);
     setTimeout(() => setCopiedContract(false), 2000);
   };
 
-  const completedMilestones = milestones.filter((m) => m.status === 'paid').length;
-  const totalMilestones = milestones.length;
+  const handleMilestoneCreated = (newMilestone: Milestone) => {
+    setMilestones([...milestones, newMilestone]);
+    loadDetails();
+  };
+
+  const handleMilestoneUpdated = (updated: Milestone) => {
+    setMilestones(milestones.map((m) => (m.id === updated.id ? updated : m)));
+    loadDetails();
+  };
+
+  const handleCompleteBounty = async () => {
+    try {
+      const completed = await api.completeBounty(bounty.id);
+      onBountyUpdated(completed);
+      loadDetails();
+    } catch (err: any) {
+      alert(err.message || 'Failed to complete bounty');
+    }
+  };
+
+  const handleRefundBounty = async () => {
+    if (!confirm('Are you sure you want to refund this bounty? Remaining escrow funds will be returned.')) return;
+    try {
+      const refunded = await api.refundBounty(bounty.id);
+      onBountyUpdated(refunded);
+      loadDetails();
+    } catch (err: any) {
+      alert(err.message || 'Failed to refund bounty');
+    }
+  };
+
+  const allMilestonesPaid = milestones.length > 0 && milestones.every((m) => m.status === 'paid');
+  const canRefund = bounty.status !== 'completed' && bounty.status !== 'cancelled' && bounty.funded_amount > 0;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 900,
+        padding: '1rem',
+      }}
+    >
       <div
-        className="glass-panel modal-content"
-        style={{ maxWidth: 740, maxHeight: '90vh', overflowY: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
+        className="glass-panel"
+        style={{
+          width: '100%',
+          maxWidth: 850,
+          maxHeight: '92vh',
+          overflowY: 'auto',
+          padding: '2rem',
+          borderRadius: 20,
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95))',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.75)',
+        }}
       >
-        {/* Modal Header */}
-        <div className="modal-header" style={{ alignItems: 'flex-start' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <span className="status-badge status-open">
-                Bounty #{bounty.id}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#fff',
+                  padding: '3px 8px',
+                  borderRadius: 12,
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                }}
+              >
+                LEVEL 3 TREASURY
               </span>
-              <span className="pill pill-network" style={{ fontSize: '0.72rem' }}>
-                Soroban Escrow
+              <span className={`status-badge status-${bounty.status}`}>
+                {bounty.status.toUpperCase()}
               </span>
             </div>
-            <h2 className="modal-title" style={{ fontSize: '1.4rem' }}>{bounty.title}</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginTop: 8, color: '#f8fafc' }}>
+              {bounty.title}
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
+              {bounty.description}
+            </p>
           </div>
-          <button className="btn-icon" onClick={onClose} id="close-bounty-detail-modal">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#94a3b8',
+              cursor: 'pointer',
+              padding: 4,
+            }}
+          >
+            <X size={20} />
           </button>
         </div>
 
-        {/* Contract Info Banner */}
+        {/* Contract & Escrow Card */}
         <div
           style={{
-            padding: '10px 14px',
-            borderRadius: 8,
-            background: 'rgba(56, 189, 248, 0.05)',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
-            marginBottom: 16,
+            padding: '14px 16px',
+            marginBottom: 20,
+            borderRadius: 12,
+            background: 'rgba(0, 0, 0, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'space-between',
-            fontSize: '0.8rem',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Shield size={16} color="#38bdf8" />
-            <span style={{ color: 'var(--text-muted)' }}>Contract Escrow:</span>
-            <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>
-              {contractAddress.slice(0, 8)}...{contractAddress.slice(-8)}
-            </span>
-            <button
-              className="copy-btn"
-              onClick={handleCopyContract}
-              title="Copy Contract ID"
-              style={{ padding: 4 }}
-            >
-              {copiedContract ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
-            </button>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>
+              Soroban Escrow Vault
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
+                {contractAddress.substring(0, 10)}...{contractAddress.substring(contractAddress.length - 8)}
+              </span>
+              <button
+                onClick={handleCopyContract}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: copiedContract ? '#10b981' : '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 2,
+                }}
+              >
+                {copiedContract ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+              <a
+                href={`${CONTRACT_EXPLORER_BASE_URL}/${contractAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', textDecoration: 'none' }}
+              >
+                <ExternalLink size={14} />
+              </a>
+            </div>
           </div>
-          <a
-            href={`${CONTRACT_EXPLORER_BASE_URL}/${contractAddress}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
-          >
-            <span>Explorer</span>
-            <ExternalLink size={12} />
-          </a>
-        </div>
 
-        {/* Bounty Overview */}
-        <div style={{ marginBottom: 18 }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: 14 }}>
-            {bounty.description}
-          </p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: 12,
-              padding: 14,
-              borderRadius: 8,
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target Funding</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700 }}>{bounty.target_amount} XLM</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>
+              Escrow Balance / Target
             </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Locked in Escrow</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary)' }}>
-                {bounty.funded_amount} XLM
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Milestone Progress</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--success)' }}>
-                {completedMilestones} / {totalMilestones} Complete
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Creator</div>
-              <div style={{ fontSize: '0.85rem', fontFamily: 'monospace', marginTop: 4 }}>
-                {bounty.creator_address.slice(0, 4)}...{bounty.creator_address.slice(-4)}
-              </div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', marginTop: 2 }}>
+              <span style={{ color: '#fbbf24' }}>{bounty.funded_amount}</span> / {bounty.target_amount} XLM
             </div>
           </div>
         </div>
 
-        {/* Tab Navigation & Controls */}
+        {/* Tabs & Controls */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            borderBottom: '1px solid var(--border-color)',
             marginBottom: 16,
+            borderBottom: '1px solid var(--border-color)',
             paddingBottom: 8,
           }}
         >
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
-              className={`pill ${activeTab === 'milestones' ? 'pill-network' : 'pill-balance'}`}
-              style={{ cursor: 'pointer', border: activeTab === 'milestones' ? '1px solid var(--primary)' : undefined }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '6px 12px',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                color: activeTab === 'milestones' ? '#38bdf8' : '#94a3b8',
+                borderBottom: activeTab === 'milestones' ? '2px solid #38bdf8' : 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
               onClick={() => setActiveTab('milestones')}
-              id="tab-milestones-btn"
             >
-              <Target size={14} style={{ marginRight: 6 }} />
+              <Layers size={14} />
               <span>Milestones ({milestones.length})</span>
             </button>
             <button
-              className={`pill ${activeTab === 'activity' ? 'pill-network' : 'pill-balance'}`}
-              style={{ cursor: 'pointer', border: activeTab === 'activity' ? '1px solid var(--primary)' : undefined }}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '6px 12px',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                color: activeTab === 'activity' ? '#38bdf8' : '#94a3b8',
+                borderBottom: activeTab === 'activity' ? '2px solid #38bdf8' : 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
               onClick={() => setActiveTab('activity')}
-              id="tab-activity-btn"
             >
-              <Activity size={14} style={{ marginRight: 6 }} />
-              <span>Activity Feed ({events.length})</span>
+              <Activity size={14} />
+              <span>Live Events ({events.length})</span>
             </button>
           </div>
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               className="btn btn-secondary"
-              style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+              style={{ padding: '6px 10px', fontSize: '0.78rem' }}
               onClick={handleReconcile}
               disabled={reconciling}
-              title="Reconcile indexed database records against authoritative on-chain contract state"
-              id="reconcile-bounty-btn"
+              title="Reconcile contract state"
             >
               <RefreshCw size={13} className={reconciling ? 'spinner' : ''} />
-              <span>Reconcile On-Chain</span>
+              <span>Reconcile</span>
             </button>
-
-            {activeTab === 'milestones' && (
+            {activeTab === 'milestones' && bounty.status !== 'completed' && (
               <button
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 style={{ padding: '6px 12px', fontSize: '0.78rem' }}
                 onClick={() => setIsCreateMilestoneOpen(true)}
                 id="add-milestone-btn"
               >
-                <Plus size={14} />
+                <Plus size={13} />
                 <span>Add Milestone</span>
               </button>
             )}
@@ -274,28 +338,9 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
         {activeTab === 'milestones' ? (
           <div>
             {milestones.length === 0 ? (
-              <div
-                style={{
-                  padding: 30,
-                  textAlign: 'center',
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: 8,
-                  border: '1px dashed var(--border-color)',
-                }}
-              >
-                <Target size={24} color="var(--text-muted)" style={{ marginBottom: 8 }} />
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>No Milestones Defined Yet</div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 14 }}>
-                  Break down this bounty into enforceable deliverables with locked XLM rewards.
-                </p>
-                <button
-                  className="btn btn-primary"
-                  style={{ padding: '6px 14px', fontSize: '0.82rem' }}
-                  onClick={() => setIsCreateMilestoneOpen(true)}
-                >
-                  <Plus size={14} />
-                  <span>Create First Milestone</span>
-                </button>
+              <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)' }}>
+                <Target size={36} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+                <p style={{ margin: 0 }}>No milestones created for this bounty yet.</p>
               </div>
             ) : (
               <div>
@@ -305,6 +350,8 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
                     milestone={m}
                     onUpdate={handleMilestoneUpdated}
                     onSubmitClick={(mTarget) => setSelectedMilestoneToSubmit(mTarget)}
+                    onConfigureRouterClick={(mTarget) => setSelectedMilestoneToConfigureRouter(mTarget)}
+                    onPreviewSettlementClick={(mTarget) => setSelectedMilestoneToPreviewSettlement(mTarget)}
                   />
                 ))}
               </div>
@@ -314,7 +361,7 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
           <ActivityFeed events={events} loading={loading} />
         )}
 
-        {/* Footer Actions */}
+        {/* Level 3 Completion & Refund Actions */}
         <div
           style={{
             marginTop: 20,
@@ -323,11 +370,36 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
           }}
         >
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Contract enforces. Backend observes. Frontend orchestrates.
+          <div style={{ display: 'flex', gap: 8 }}>
+            {allMilestonesPaid && bounty.status !== 'completed' && (
+              <button
+                className="btn btn-primary"
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', padding: '8px 14px', fontSize: '0.82rem' }}
+                onClick={handleCompleteBounty}
+                id="complete-bounty-btn"
+              >
+                <CheckCircle2 size={14} />
+                <span>Mark Bounty Completed</span>
+              </button>
+            )}
+
+            {canRefund && (
+              <button
+                className="btn btn-secondary"
+                style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171', padding: '8px 14px', fontSize: '0.82rem' }}
+                onClick={handleRefundBounty}
+                id="refund-bounty-btn"
+              >
+                <RotateCcw size={14} />
+                <span>Refund Unspent Escrow</span>
+              </button>
+            )}
           </div>
+
           <button
             className="btn btn-primary"
             onClick={() => onFundClick(bounty)}
@@ -352,6 +424,26 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
           onClose={() => setSelectedMilestoneToSubmit(null)}
           onMilestoneSubmitted={handleMilestoneUpdated}
         />
+
+        {selectedMilestoneToConfigureRouter && (
+          <SettlementBuilderModal
+            bountyId={bounty.id}
+            milestone={selectedMilestoneToConfigureRouter}
+            isOpen={!!selectedMilestoneToConfigureRouter}
+            onClose={() => setSelectedMilestoneToConfigureRouter(null)}
+            onSuccess={loadDetails}
+          />
+        )}
+
+        {selectedMilestoneToPreviewSettlement && (
+          <SettlementPreviewModal
+            milestone={selectedMilestoneToPreviewSettlement}
+            settlement={selectedMilestoneToPreviewSettlement.settlement}
+            isOpen={!!selectedMilestoneToPreviewSettlement}
+            onClose={() => setSelectedMilestoneToPreviewSettlement(null)}
+            onSuccess={loadDetails}
+          />
+        )}
       </div>
     </div>
   );

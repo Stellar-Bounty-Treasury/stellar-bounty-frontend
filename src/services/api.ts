@@ -6,18 +6,22 @@ import {
   Milestone,
   Verification,
   ContractEvent,
+  Settlement,
+  ConfigureSettlementPayload,
+  TreasuryStats,
 } from '../types';
 import { SOROBAN_CONTRACT_ID } from './stellar';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // --- Fallback Local Storage Layer for Netlify / Offline Deployments ---
-const STORAGE_KEY = 'stellar_bounty_treasury_data_v2';
+const STORAGE_KEY = 'stellar_bounty_treasury_data_v3';
 
 interface FallbackState {
   bounties: Bounty[];
   milestones: Record<number, Milestone[]>;
   verifications: Record<number, Verification[]>;
+  settlements: Record<number, Settlement[]>;
   events: Record<number, ContractEvent[]>;
 }
 
@@ -25,13 +29,13 @@ function getInitialFallbackState(): FallbackState {
   const initialBounty: Bounty = {
     id: 1,
     contract_id: SOROBAN_CONTRACT_ID,
-    title: 'Implement Soroban Escrow & Milestone Rules',
+    title: 'Implement Soroban Escrow & Settlement Router',
     description:
-      'Develop on-chain milestone escrow locking and conditional release upon community review verification.',
+      'Programmable bounty treasury with multi-recipient settlement routing, verification thresholds, and realtime blockchain events.',
     creator_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
-    target_amount: 100,
-    funded_amount: 60,
-    status: 'open',
+    target_amount: 1000,
+    funded_amount: 1000,
+    status: 'funded',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -40,34 +44,53 @@ function getInitialFallbackState(): FallbackState {
     id: 1,
     bounty_id: 1,
     contract_milestone_id: 1,
-    description: 'Milestone 1: Core smart contract escrow & verification tests',
-    reward_amount: 50,
-    recipient_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
-    status: 'submitted',
+    description: 'Milestone 1: Multi-recipient settlement router & atomic distribution',
+    reward_amount: 1000,
+    recipient_address: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED',
+    status: 'approved',
     approval_threshold: 2,
-    approvals: 1,
+    approvals: 2,
     rejections: 0,
-    submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/pull/1',
+    submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/pull/3',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 
+  const initialSettlement: Settlement = {
+    id: 1,
+    bounty_id: 1,
+    milestone_id: 1,
+    allocation_type: 'fixed',
+    total_amount: 1000,
+    recipients: [
+      { recipient: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED', amount: 700, percentage_bps: 7000, label: 'Developer (70%)' },
+      { recipient: 'GCG5S6QWVRIIVSQWA5DF3X2Q2KQQ6KEHMAXZUMGFPX7YDGGA2X67TPEU', amount: 200, percentage_bps: 2000, label: 'Designer (20%)' },
+      { recipient: 'GDWBHVJ7JGSCRTWL3OVCHZRZMOJ2BSZZSIOIPGGV5HXYG4FWFHNZPMVW', amount: 100, percentage_bps: 1000, label: 'Reviewer (10%)' },
+    ],
+    status: 'authorized',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  initialMilestone.settlement = initialSettlement;
+
   const initialEvent: ContractEvent = {
     id: 1,
     event_key: `init-evt-1`,
-    event_type: 'bounty_funded',
+    event_type: 'settlement_authorized',
     bounty_id: 1,
     milestone_id: 1,
     transaction_hash: 'c19ae884bb12a1332ec6af39fbb81be34a1ec2a4419019af1725ab0f3d4cfd88',
     ledger: 624180,
-    payload: { amount: 60, contributor: 'GD6D...F2DN' },
+    payload: { amount: 1000, recipients: 3 },
     created_at: new Date().toISOString(),
   };
 
   return {
-    bounties: [{ ...initialBounty, milestones: [initialMilestone], events: [initialEvent] }],
+    bounties: [{ ...initialBounty, milestones: [initialMilestone], settlements: [initialSettlement], events: [initialEvent] }],
     milestones: { 1: [initialMilestone] },
     verifications: { 1: [] },
+    settlements: { 1: [initialSettlement] },
     events: { 1: [initialEvent] },
   };
 }
@@ -99,36 +122,81 @@ function saveFallbackState(state: FallbackState): void {
 export const api = {
   async getBounties(): Promise<Bounty[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/bounties`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data || [];
-      }
-    } catch {
-      // Netlify / Mixed Content fallback
-    }
-    const state = loadFallbackState();
-    return state.bounties;
-  },
-
-  async getBounty(id: number): Promise<Bounty> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/bounties/${id}`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${API_BASE_URL}/api/bounties`, {
+        signal: AbortSignal.timeout(2000),
+      });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
-    } catch {
-      // Fallback
-    }
+    } catch {}
+    return loadFallbackState().bounties;
+  },
+
+  async getBounty(id: number): Promise<Bounty> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/bounties/${id}`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.data;
+      }
+    } catch {}
     const state = loadFallbackState();
-    const bounty = state.bounties.find((b) => b.id === id);
-    if (!bounty) {
-      throw new Error(`Bounty ${id} not found.`);
+    const b = state.bounties.find((item) => item.id === id);
+    if (!b) throw new Error(`Bounty ${id} not found`);
+    return {
+      ...b,
+      milestones: state.milestones[id] || [],
+      settlements: state.settlements[id] || [],
+      events: state.events[id] || [],
+    };
+  },
+
+  async getTreasuryStats(): Promise<TreasuryStats> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/bounties/stats`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.data;
+      }
+    } catch {}
+
+    const state = loadFallbackState();
+    let totalFunds = 0;
+    let totalDistributed = 0;
+    let pendingMilestones = 0;
+    let pendingSettlements = 0;
+
+    for (const b of state.bounties) {
+      totalFunds += b.funded_amount;
     }
-    bounty.milestones = state.milestones[id] || [];
-    bounty.events = state.events[id] || [];
-    return bounty;
+
+    for (const mList of Object.values(state.milestones)) {
+      for (const m of mList) {
+        if (m.status === 'paid') totalDistributed += m.reward_amount;
+        else pendingMilestones++;
+      }
+    }
+
+    for (const sList of Object.values(state.settlements)) {
+      for (const s of sList) {
+        if (s.status !== 'settled') pendingSettlements++;
+      }
+    }
+
+    return {
+      total_funds: totalFunds,
+      total_bounties: state.bounties.length,
+      active_bounties: state.bounties.filter((b) => b.status === 'open' || b.status === 'funded').length,
+      completed_bounties: state.bounties.filter((b) => b.status === 'completed').length,
+      pending_milestones: pendingMilestones,
+      pending_settlements: pendingSettlements,
+      total_distributed: totalDistributed,
+    };
   },
 
   async createBounty(payload: CreateBountyPayload): Promise<Bounty> {
@@ -136,16 +204,14 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/api/bounties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        body: JSON.stringify({ ...payload, contract_id: SOROBAN_CONTRACT_ID }),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
-    } catch {
-      // Fallback
-    }
+    } catch {}
 
     const state = loadFallbackState();
     const newId = state.bounties.length > 0 ? Math.max(...state.bounties.map((b) => b.id)) + 1 : 1;
@@ -162,16 +228,27 @@ export const api = {
       created_at: now,
       updated_at: now,
       milestones: [],
+      contributions: [],
       events: [],
     };
     state.bounties.unshift(newBounty);
     state.milestones[newId] = [];
-    state.events[newId] = [];
+    state.settlements[newId] = [];
+    state.events[newId] = [
+      {
+        id: Date.now(),
+        event_key: `create-${newId}`,
+        event_type: 'bounty_created',
+        bounty_id: newId,
+        payload: { title: payload.title, target: payload.target_amount },
+        created_at: now,
+      },
+    ];
     saveFallbackState(state);
     return newBounty;
   },
 
-  async recordContribution(
+  async fundBounty(
     bountyId: number,
     payload: { contributor_address: string; amount: number; transaction_hash: string }
   ): Promise<{ contribution: Contribution; bounty: Bounty }> {
@@ -180,24 +257,23 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
-    } catch {
-      // Fallback
-    }
+    } catch {}
 
     const state = loadFallbackState();
-    const bounty = state.bounties.find((b) => b.id === bountyId);
-    if (!bounty) throw new Error('Bounty not found');
-    bounty.funded_amount += payload.amount;
-    if (bounty.funded_amount >= bounty.target_amount) bounty.status = 'funded';
-    bounty.updated_at = new Date().toISOString();
+    const b = state.bounties.find((item) => item.id === bountyId);
+    if (!b) throw new Error(`Bounty ${bountyId} not found`);
 
-    const contribution: Contribution = {
+    b.funded_amount = Math.round((b.funded_amount + payload.amount) * 10000000) / 10000000;
+    if (b.funded_amount >= b.target_amount) b.status = 'funded';
+    b.updated_at = new Date().toISOString();
+
+    const contrib: Contribution = {
       id: Date.now(),
       bounty_id: bountyId,
       contributor_address: payload.contributor_address,
@@ -216,11 +292,35 @@ export const api = {
       payload: { amount: payload.amount, contributor: payload.contributor_address },
       created_at: new Date().toISOString(),
     };
+
     if (!state.events[bountyId]) state.events[bountyId] = [];
     state.events[bountyId].unshift(evt);
-    saveFallbackState(state);
 
-    return { contribution, bounty };
+    saveFallbackState(state);
+    return { contribution: contrib, bounty: b };
+  },
+
+  async recordContribution(
+    bountyId: number,
+    payload: { contributor_address: string; amount: number; transaction_hash: string }
+  ): Promise<{ contribution: Contribution; bounty: Bounty }> {
+    return this.fundBounty(bountyId, payload);
+  },
+
+  async reconcileBounty(bountyId: number): Promise<{ reconciled: boolean; on_chain_balance?: number }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/reconcile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bounty_id: bountyId }),
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.data;
+      }
+    } catch {}
+    return { reconciled: true };
   },
 
   async createMilestone(bountyId: number, payload: CreateMilestonePayload): Promise<Milestone> {
@@ -228,27 +328,27 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/milestones`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        body: JSON.stringify({
+          contract_milestone_id: Date.now() % 100000,
+          ...payload,
+        }),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
-    } catch {
-      // Fallback
-    }
+    } catch {}
 
     const state = loadFallbackState();
-    const existing = state.milestones[bountyId] || [];
-    const milestoneId = Date.now();
-    const contractMilestoneId = existing.length + 1;
+    const bList = state.milestones[bountyId] || [];
+    const newId = bList.length > 0 ? Math.max(...bList.map((m) => m.id)) + 1 : 1;
     const now = new Date().toISOString();
 
-    const newMilestone: Milestone = {
-      id: milestoneId,
+    const milestone: Milestone = {
+      id: newId,
       bounty_id: bountyId,
-      contract_milestone_id: contractMilestoneId,
+      contract_milestone_id: newId,
       description: payload.description,
       reward_amount: payload.reward_amount,
       recipient_address: payload.recipient_address,
@@ -261,45 +361,55 @@ export const api = {
       updated_at: now,
     };
 
-    existing.push(newMilestone);
-    state.milestones[bountyId] = existing;
-
-    const bounty = state.bounties.find((b) => b.id === bountyId);
-    if (bounty) {
-      bounty.milestones = existing;
-    }
+    bList.push(milestone);
+    state.milestones[bountyId] = bList;
     saveFallbackState(state);
-    return newMilestone;
+    return milestone;
   },
 
-  async getBountyMilestones(bountyId: number): Promise<Milestone[]> {
+  async configureSettlement(
+    bountyId: number,
+    milestoneId: number,
+    payload: ConfigureSettlementPayload
+  ): Promise<Settlement> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/milestones`, {
-        signal: AbortSignal.timeout(2000),
+      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/milestones/${milestoneId}/settlement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(3000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data || [];
-      }
-    } catch {}
-    const state = loadFallbackState();
-    return state.milestones[bountyId] || [];
-  },
-
-  async getMilestone(id: number): Promise<Milestone> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/milestones/${id}`, { signal: AbortSignal.timeout(2000) });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
     } catch {}
+
     const state = loadFallbackState();
-    for (const list of Object.values(state.milestones)) {
-      const found = list.find((m) => m.id === id);
-      if (found) return found;
-    }
-    throw new Error('Milestone not found');
+    const m = (state.milestones[bountyId] || []).find((item) => item.id === milestoneId);
+    if (!m) throw new Error('Milestone not found');
+
+    const now = new Date().toISOString();
+    const settlement: Settlement = {
+      id: Date.now(),
+      bounty_id: bountyId,
+      milestone_id: milestoneId,
+      allocation_type: payload.allocation_type,
+      total_amount: m.reward_amount,
+      recipients: payload.recipients,
+      status: m.status === 'approved' ? 'authorized' : 'pending',
+      created_at: now,
+      updated_at: now,
+    };
+
+    if (!state.settlements[bountyId]) state.settlements[bountyId] = [];
+    const idx = state.settlements[bountyId].findIndex((s) => s.milestone_id === milestoneId);
+    if (idx >= 0) state.settlements[bountyId][idx] = settlement;
+    else state.settlements[bountyId].push(settlement);
+
+    m.settlement = settlement;
+    saveFallbackState(state);
+    return settlement;
   },
 
   async submitMilestone(
@@ -311,7 +421,7 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
@@ -326,20 +436,6 @@ export const api = {
         m.status = 'submitted';
         m.submission_reference = payload.submission_reference;
         m.updated_at = new Date().toISOString();
-
-        const evt: ContractEvent = {
-          id: Date.now(),
-          event_key: `evt-sub-${Date.now()}`,
-          event_type: 'milestone_submitted',
-          bounty_id: Number(bId),
-          milestone_id: m.contract_milestone_id,
-          transaction_hash: payload.transaction_hash,
-          payload: { submission_ref: payload.submission_reference },
-          created_at: new Date().toISOString(),
-        };
-        if (!state.events[Number(bId)]) state.events[Number(bId)] = [];
-        state.events[Number(bId)].unshift(evt);
-
         saveFallbackState(state);
         return m;
       }
@@ -350,36 +446,36 @@ export const api = {
   async verifyMilestone(
     milestoneId: number,
     payload: { reviewer_address: string; decision: 'approve' | 'reject'; transaction_hash?: string }
-  ): Promise<{ verification: Verification; milestone: Milestone }> {
+  ): Promise<{ milestone: Milestone; verification: Verification }> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/milestones/${milestoneId}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
-      if (res.status === 409) {
-        const err = await res.json();
-        throw new Error(err.error || 'Duplicate vote');
-      }
-    } catch (e: any) {
-      if (e.message && e.message.includes('already voted')) throw e;
-    }
+    } catch {}
 
     const state = loadFallbackState();
-    const verifs = state.verifications[milestoneId] || [];
-    if (verifs.some((v) => v.reviewer_address === payload.reviewer_address)) {
-      throw new Error(`Reviewer ${payload.reviewer_address} has already voted on this milestone.`);
-    }
-
     for (const [bId, list] of Object.entries(state.milestones)) {
       const m = list.find((item) => item.id === milestoneId);
       if (m) {
-        const verification: Verification = {
+        if (payload.decision === 'approve') m.approvals++;
+        else m.rejections++;
+
+        if (m.approvals >= m.approval_threshold) {
+          m.status = 'approved';
+          if (m.settlement) m.settlement.status = 'authorized';
+        } else {
+          m.status = 'under_review';
+        }
+        m.updated_at = new Date().toISOString();
+
+        const v: Verification = {
           id: Date.now(),
           milestone_id: milestoneId,
           reviewer_address: payload.reviewer_address,
@@ -387,68 +483,35 @@ export const api = {
           transaction_hash: payload.transaction_hash,
           created_at: new Date().toISOString(),
         };
-        verifs.push(verification);
-        state.verifications[milestoneId] = verifs;
 
-        if (payload.decision === 'approve') {
-          m.approvals += 1;
-        } else {
-          m.rejections += 1;
-        }
-
-        if (m.approvals >= m.approval_threshold) {
-          m.status = 'approved';
-          const approveEvt: ContractEvent = {
-            id: Date.now() + 1,
-            event_key: `evt-appr-${Date.now()}`,
-            event_type: 'milestone_approved',
-            bounty_id: Number(bId),
-            milestone_id: m.contract_milestone_id,
-            transaction_hash: payload.transaction_hash,
-            payload: { approvals: m.approvals },
-            created_at: new Date().toISOString(),
-          };
-          if (!state.events[Number(bId)]) state.events[Number(bId)] = [];
-          state.events[Number(bId)].unshift(approveEvt);
-        } else {
-          m.status = 'under_review';
-        }
-        m.updated_at = new Date().toISOString();
+        if (!state.verifications[milestoneId]) state.verifications[milestoneId] = [];
+        state.verifications[milestoneId].unshift(v);
         saveFallbackState(state);
-        return { verification, milestone: m };
+        return { milestone: m, verification: v };
       }
     }
     throw new Error('Milestone not found');
   },
 
-  async getMilestoneVerifications(milestoneId: number): Promise<Verification[]> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/milestones/${milestoneId}/verifications`, {
-        signal: AbortSignal.timeout(2000),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data || [];
-      }
-    } catch {}
-    const state = loadFallbackState();
-    return state.verifications[milestoneId] || [];
-  },
-
-  async releaseMilestonePayment(
+  async releasePayment(
     milestoneId: number,
-    payload: { caller_address?: string; transaction_hash?: string }
-  ): Promise<{ milestone: Milestone; transaction_hash: string; message: string }> {
+    payload: { transaction_hash?: string } = {}
+  ): Promise<{ milestone: Milestone; transaction_hash: string; message: string; settlement?: Settlement }> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/milestones/${milestoneId}/release-payment`, {
+      const res = await fetch(`${API_BASE_URL}/api/milestones/${milestoneId}/release`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(2500),
+        body: JSON.stringify({ tx_hash: payload.transaction_hash }),
+        signal: AbortSignal.timeout(4000),
       });
       if (res.ok) {
         const data = await res.json();
-        return data.data;
+        return {
+          milestone: data.data,
+          transaction_hash: payload.transaction_hash || 'tx-settled',
+          message: 'Payment released and settlement executed successfully.',
+          settlement: data.data.settlement,
+        };
       }
     } catch {}
 
@@ -456,23 +519,31 @@ export const api = {
     for (const [bId, list] of Object.entries(state.milestones)) {
       const m = list.find((item) => item.id === milestoneId);
       if (m) {
-        if (m.status !== 'approved' && m.approvals < m.approval_threshold) {
-          throw new Error('Approval threshold has not been reached.');
-        }
         m.status = 'paid';
         m.updated_at = new Date().toISOString();
-        const txHash = payload.transaction_hash || `paid-tx-${Date.now()}`;
+        const txHash = payload.transaction_hash || `settle-tx-${Date.now()}`;
+
+        if (m.settlement) {
+          m.settlement.status = 'settled';
+          m.settlement.transaction_hash = txHash;
+        }
+
+        const b = state.bounties.find((item) => item.id === Number(bId));
+        if (b) {
+          b.funded_amount = Math.max(0, b.funded_amount - m.reward_amount);
+        }
 
         const payEvt: ContractEvent = {
           id: Date.now(),
-          event_key: `evt-pay-${Date.now()}`,
-          event_type: 'milestone_paid',
+          event_key: `evt-settle-${Date.now()}`,
+          event_type: 'settlement_completed',
           bounty_id: Number(bId),
           milestone_id: m.contract_milestone_id,
           transaction_hash: txHash,
-          payload: { amount: m.reward_amount, recipient: m.recipient_address },
+          payload: { amount: m.reward_amount },
           created_at: new Date().toISOString(),
         };
+
         if (!state.events[Number(bId)]) state.events[Number(bId)] = [];
         state.events[Number(bId)].unshift(payEvt);
 
@@ -480,39 +551,100 @@ export const api = {
         return {
           milestone: m,
           transaction_hash: txHash,
-          message: `Payment of ${m.reward_amount} XLM released to ${m.recipient_address}.`,
+          message: `Multi-recipient settlement of ${m.reward_amount} XLM executed.`,
+          settlement: m.settlement || undefined,
         };
       }
     }
     throw new Error('Milestone not found');
   },
 
-  async getBountyEvents(bountyId: number): Promise<ContractEvent[]> {
+  async refundBounty(bountyId: number, txHash?: string): Promise<Bounty> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/events`, {
-        signal: AbortSignal.timeout(2000),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data || [];
-      }
-    } catch {}
-    const state = loadFallbackState();
-    return state.events[bountyId] || [];
-  },
-
-  async reconcileBounty(bountyId: number): Promise<{ reconciled: boolean; onchain_milestones: number }> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/reconcile`, {
+      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/refund`, {
         method: 'POST',
-        signal: AbortSignal.timeout(2500),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tx_hash: txHash }),
+        signal: AbortSignal.timeout(3000),
       });
       if (res.ok) {
         const data = await res.json();
         return data.data;
       }
     } catch {}
-    return { reconciled: true, onchain_milestones: 1 };
+
+    const state = loadFallbackState();
+    const b = state.bounties.find((item) => item.id === bountyId);
+    if (!b) throw new Error('Bounty not found');
+    b.status = 'cancelled';
+    b.funded_amount = 0;
+    b.updated_at = new Date().toISOString();
+    saveFallbackState(state);
+    return b;
+  },
+
+  async completeBounty(bountyId: number): Promise<Bounty> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.data;
+      }
+    } catch {}
+
+    const state = loadFallbackState();
+    const b = state.bounties.find((item) => item.id === bountyId);
+    if (!b) throw new Error('Bounty not found');
+    b.status = 'completed';
+    b.updated_at = new Date().toISOString();
+    saveFallbackState(state);
+    return b;
+  },
+
+  subscribeRealtimeEvents(onEvent: (event: { type: string; data: any }) => void): () => void {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      return () => {};
+    }
+
+    let source: EventSource | null = null;
+    try {
+      source = new EventSource(`${API_BASE_URL}/api/events/stream`);
+
+      source.onmessage = (e) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          onEvent(parsed);
+        } catch {}
+      };
+
+      source.addEventListener('settlement_completed', (e: any) => {
+        try {
+          onEvent(JSON.parse(e.data));
+        } catch {}
+      });
+
+      source.addEventListener('milestone_approved', (e: any) => {
+        try {
+          onEvent(JSON.parse(e.data));
+        } catch {}
+      });
+
+      source.addEventListener('bounty_funded', (e: any) => {
+        try {
+          onEvent(JSON.parse(e.data));
+        } catch {}
+      });
+    } catch (err) {
+      console.warn('Realtime SSE connection failed:', err);
+    }
+
+    return () => {
+      if (source) source.close();
+    };
   },
 
   async getHealth(): Promise<{ status: string; network: string; contract_address?: string }> {
