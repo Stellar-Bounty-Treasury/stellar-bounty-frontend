@@ -31,7 +31,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal }) => {
         <div>
           <span className="brand-title">Stellar Bounty Treasury</span>
         </div>
-        <span className="brand-badge">Level 1 (White Belt)</span>
+        <span
+          className="brand-badge"
+          style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2))',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            color: '#fbbf24',
+          }}
+        >
+          Level 3 (Orange Belt)
+        </span>
       </div>
 
       <div className="navbar-actions">
