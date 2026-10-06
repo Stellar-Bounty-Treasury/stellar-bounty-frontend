@@ -15,6 +15,25 @@ At **Level 1 (White Belt)**, this application proves the end-to-end payment flow
 
 ---
 
+## 📸 Level 1 Evidence & Screenshots
+
+### 1. Wallet Connected & Live XLM Testnet Balance
+The user connects via Freighter or instant Testnet signer. The address is displayed in shortened form (`GD6D...F2DN`) with 1-click clipboard copy, and their authentic XLM balance (`9975.00 XLM`) is fetched directly from the Stellar Horizon RPC.
+
+![Wallet Connected & Balance](docs/evidence/wallet_connected.png)
+
+### 2. Transaction Confirmed on Stellar Testnet
+Upon entering a contribution (15 XLM) and signing, the transaction is submitted directly to the Stellar network ledger. The resulting transaction hash (`d0ed248c8119...`) is displayed with a direct link to Stellar Expert Explorer.
+
+![Transaction Confirmed & Explorer Link](docs/evidence/fund_confirmation.png)
+
+### 3. Responsive Mobile View
+The dashboard automatically scales to mobile viewports with flexible cards, responsive navbar, and full touch accessibility.
+
+![Responsive Mobile Dashboard](docs/evidence/mobile_view.png)
+
+---
+
 ## ✨ Features
 
 1. **Stellar Wallet Integration**:
@@ -65,6 +84,8 @@ stellar-bounty-frontend/
 │   ├── index.css                  # Custom design system with glassmorphic tokens & dark mode
 │   ├── App.tsx                    # Main dashboard layout, stats counters, search filters
 │   └── main.tsx                   # React root entrypoint
+├── docs/
+│   └── evidence/                  # Working application screenshots
 ├── .env.example
 ├── vite.config.ts
 ├── tsconfig.json
@@ -104,14 +125,7 @@ VITE_EXPLORER_URL=https://stellar.expert/explorer/testnet/tx
 npm run dev
 ```
 
-Application will run locally on `http://localhost:3000`.
-
-### Production Build
-
-```bash
-npm run build
-npm run preview
-```
+Application runs on `http://localhost:3000`.
 
 ### Running Unit Tests
 
