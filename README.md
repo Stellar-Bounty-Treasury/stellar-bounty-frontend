@@ -2,6 +2,9 @@
 
 Modern React & TypeScript user interface for **Stellar Bounty Treasury**, demonstrating wallet connection, bounty creation, live XLM balance queries, and real **Stellar Testnet** funding transactions.
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1acda6cc-71c7-48dd-bda0-f4c23915a1e5/deploy-status)](https://stellar-bounty-treasury-2676.netlify.app)
+**🌐 Live Production Deployment**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
+
 ---
 
 ## 📌 What It Does — Level 2 (Yellow Belt)
