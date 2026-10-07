@@ -51,7 +51,7 @@ export const TreasuryDashboard: React.FC<TreasuryDashboardProps> = ({
                   textTransform: 'uppercase',
                 }}
               >
-                Level 3 • Orange Belt
+                Settlement Engine • Protocol v1.0
               </span>
               <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
                 Programmable Treasury & Settlement Router

@@ -6,10 +6,11 @@ import { FundBountyModal } from './components/FundBountyModal';
 import { BountyDetailModal } from './components/BountyDetailModal';
 import { WalletConnectModal } from './components/WalletConnectModal';
 import { TreasuryDashboard } from './components/TreasuryDashboard';
+import { VideoModal } from './components/VideoModal';
 import { useWallet } from './context/WalletContext';
 import { api } from './services/api';
 import { Bounty, TreasuryStats } from './types';
-import { Plus, Search, Sparkles, AlertCircle, RefreshCw, Radio } from 'lucide-react';
+import { Plus, Search, Sparkles, AlertCircle, RefreshCw, Radio, Play } from 'lucide-react';
 import { SOROBAN_CONTRACT_ID } from './services/stellar';
 
 export const App: React.FC = () => {
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
   // Modals state
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [selectedBountyToFund, setSelectedBountyToFund] = useState<Bounty | null>(null);
   const [selectedBountyForDetail, setSelectedBountyForDetail] = useState<Bounty | null>(null);
 
@@ -105,7 +107,10 @@ export const App: React.FC = () => {
   return (
     <div className="app-container">
       {/* Navigation */}
-      <Navbar onOpenConnectModal={() => setIsConnectModalOpen(true)} />
+      <Navbar
+        onOpenConnectModal={() => setIsConnectModalOpen(true)}
+        onOpenVideoModal={() => setIsVideoModalOpen(true)}
+      />
 
       {/* Realtime Notification Banner */}
       {realtimeNotice && (
@@ -152,6 +157,18 @@ export const App: React.FC = () => {
             >
               <Plus size={18} />
               <span>Create Programmable Bounty</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsVideoModalOpen(true)}
+              id="hero-watch-demo-btn"
+              style={{
+                borderColor: 'rgba(245, 158, 11, 0.4)',
+                color: '#fbbf24',
+              }}
+            >
+              <Play size={18} fill="#fbbf24" />
+              <span>Watch Video Walkthrough</span>
             </button>
             {!isConnected && (
               <button
@@ -292,6 +309,11 @@ export const App: React.FC = () => {
           setSelectedBountyForDetail(null);
           setSelectedBountyToFund(b);
         }}
+      />
+
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
       />
     </div>
   );

@@ -174,7 +174,7 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
                   textTransform: 'uppercase',
                 }}
               >
-                LEVEL 3 TREASURY
+                SMART ESCROW TREASURY
               </span>
               <span className={`status-badge status-${bounty.status}`}>
                 {bounty.status.toUpperCase()}
@@ -361,7 +361,7 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
           <ActivityFeed events={events} loading={loading} />
         )}
 
-        {/* Level 3 Completion & Refund Actions */}
+        {/* Treasury Settlement & Refund Actions */}
         <div
           style={{
             marginTop: 20,

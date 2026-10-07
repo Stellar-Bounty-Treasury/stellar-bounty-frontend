@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet } from 'lucide-react';
+import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet, Play } from 'lucide-react';
 
 interface NavbarProps {
   onOpenConnectModal: () => void;
+  onOpenVideoModal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoModal }) => {
   const { isConnected, address, balance, disconnect, fundWithFriendbot, isLoading } = useWallet();
   const [copied, setCopied] = useState(false);
 
@@ -34,16 +35,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal }) => {
         <span
           className="brand-badge"
           style={{
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2))',
-            border: '1px solid rgba(245, 158, 11, 0.4)',
-            color: '#fbbf24',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            color: '#34d399',
           }}
         >
-          Level 3 (Orange Belt)
+          Protocol v1.0 • Verified
         </span>
       </div>
 
       <div className="navbar-actions">
+        {onOpenVideoModal && (
+          <button
+            className="btn btn-secondary"
+            onClick={onOpenVideoModal}
+            title="Watch full product video walkthrough"
+            id="watch-demo-nav-btn"
+            style={{
+              padding: '6px 14px',
+              fontSize: '0.82rem',
+              borderColor: 'rgba(245, 158, 11, 0.4)',
+              color: '#fbbf24',
+              background: 'rgba(245, 158, 11, 0.08)',
+            }}
+          >
+            <Play size={14} fill="#fbbf24" />
+            <span>Watch Demo</span>
+          </button>
+        )}
+
         {/* Network Indicator */}
         <div className="pill pill-network" id="network-status-pill">
           <span className="pill-network-dot"></span>

@@ -101,7 +101,7 @@ describe('Frontend Validation & Logic Tests', () => {
     });
   });
 
-  describe('Level 2 Milestone & Conditional Payment Logic', () => {
+  describe('Milestone & Conditional Settlement Logic', () => {
     function evaluateConditionalSettlement(
       approvals: number,
       threshold: number,

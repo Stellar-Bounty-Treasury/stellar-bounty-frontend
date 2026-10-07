@@ -14,11 +14,35 @@
 
 Experience the complete end-to-end journey: from wallet funding and milestone review to the multi-recipient Settlement Router and atomic payout:
 
-![Stellar Bounty Treasury Walkthrough](docs/evidence/level3_demo.gif)
+![Stellar Bounty Treasury Walkthrough](docs/evidence/treasury_demo.gif)
 
-* **Direct Video Links**: [Download High-Definition MP4](docs/evidence/level3_demo.mp4) • [Watch WebM Video](docs/evidence/level3_demo.webm)
-* **Live Deployment**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
+* **Direct Video Links**: [High-Definition MP4](docs/evidence/treasury_demo.mp4) • [WebM Video](docs/evidence/treasury_demo.webm) • [Stream on Netlify](https://stellar-bounty-treasury-2676.netlify.app/walkthrough.mp4)
+* **Live Web Application**: [https://stellar-bounty-treasury-2676.netlify.app](https://stellar-bounty-treasury-2676.netlify.app)
 * **Contract on Stellar.Expert**: [`CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52`](https://stellar.expert/explorer/testnet/contract/CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52)
+
+---
+
+## 📸 Product Interface & Functionality Walkthrough
+
+### 1. Treasury Telemetry & Bounty Discovery
+The main dashboard provides real-time tracking of total funds held in escrow, active vs completed bounties, distributed payouts, and live blockchain event updates via Server-Sent Events (SSE).
+![Treasury Dashboard & Telemetry](docs/screenshots/01_treasury_dashboard.png)
+
+### 2. Trustless Bounty Creation & Escrow Vaulting
+Intuitive interface for deploying programmable, milestone-governed bounties directly onto Stellar Testnet. Bounty creators specify funding targets, token assets, and milestone terms.
+![Create Programmable Bounty](docs/screenshots/02_create_bounty_modal.png)
+
+### 3. Milestone Governance & Work Verification Quorum
+Contributors submit milestone proof of completion (e.g. GitHub pull requests, commits, or IPFS hashes). Decentralized community verifiers review evidence and submit threshold approval votes.
+![Milestone Governance & Work Verification](docs/screenshots/03_milestone_governance.png)
+
+### 4. Programmable Settlement Router Builder
+Configure multi-party reward distribution rules across contributors before execution. Supports both Fixed Amount splits and Percentage Splits (mathematically validated to sum to 10,000 basis points / 100.00%).
+![Settlement Router Configuration](docs/screenshots/04_settlement_router_builder.png)
+
+### 5. Pre-Flight Solvency Verification & Atomic Settlement Execution
+Pre-flight verification ensures milestone approval thresholds are satisfied, allocations are mathematically sound, and the escrow vault holds sufficient balance before triggering atomic on-chain disbursement through Soroban.
+![Pre-Flight Settlement Preview](docs/screenshots/05_settlement_execution_preview.png)
 
 ---
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { isValidStellarAddress } from '../services/stellar';
 
-describe('Level 3 Settlement Router & Treasury Logic Tests', () => {
+describe('Settlement Router & Programmable Treasury Logic Tests', () => {
   const validDev = 'GCJ2ZWBIPSHBATSPIB45PZIB3QLI5HT6EURUSAO6WSTNFVQSSMDRQ2XE';
   const validDesigner = 'GAR2BSQ6MU46AT7JUCD5TIK3E5BYRVRUUVBPYDJAP3OALCT24NV3EPPV';
   const validReviewer = 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED';
