@@ -15,7 +15,7 @@ import { SOROBAN_CONTRACT_ID } from './stellar';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // --- Fallback Local Storage Layer for Netlify / Offline Deployments ---
-const STORAGE_KEY = 'stellar_bounty_treasury_data_v3';
+const STORAGE_KEY = 'stellar_bounty_treasury_data_v4';
 
 interface FallbackState {
   bounties: Bounty[];
@@ -26,21 +26,24 @@ interface FallbackState {
 }
 
 function getInitialFallbackState(): FallbackState {
-  const initialBounty: Bounty = {
+  const now = new Date().toISOString();
+
+  // --- BOUNTY 1 (Funded with Multi-Recipient Settlement) ---
+  const b1: Bounty = {
     id: 1,
     contract_id: SOROBAN_CONTRACT_ID,
     title: 'Implement Soroban Escrow & Settlement Router',
     description:
-      'Programmable bounty treasury with multi-recipient settlement routing, verification thresholds, and realtime blockchain events.',
+      'Programmable bounty treasury with multi-recipient settlement routing, verification thresholds, and realtime blockchain events on Stellar Testnet.',
     creator_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
     target_amount: 1000,
     funded_amount: 1000,
     status: 'funded',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: '2026-10-06T10:00:00Z',
+    updated_at: '2026-10-06T14:30:00Z',
   };
 
-  const initialMilestone: Milestone = {
+  const m1: Milestone = {
     id: 1,
     bounty_id: 1,
     contract_milestone_id: 1,
@@ -52,46 +55,212 @@ function getInitialFallbackState(): FallbackState {
     approvals: 2,
     rejections: 0,
     submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/pull/3',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: '2026-10-06T11:00:00Z',
+    updated_at: '2026-10-06T14:30:00Z',
   };
 
-  const initialSettlement: Settlement = {
+  const s1: Settlement = {
     id: 1,
     bounty_id: 1,
     milestone_id: 1,
     allocation_type: 'fixed',
     total_amount: 1000,
     recipients: [
-      { recipient: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED', amount: 700, percentage_bps: 7000, label: 'Developer (70%)' },
-      { recipient: 'GCG5S6QWVRIIVSQWA5DF3X2Q2KQQ6KEHMAXZUMGFPX7YDGGA2X67TPEU', amount: 200, percentage_bps: 2000, label: 'Designer (20%)' },
-      { recipient: 'GDWBHVJ7JGSCRTWL3OVCHZRZMOJ2BSZZSIOIPGGV5HXYG4FWFHNZPMVW', amount: 100, percentage_bps: 1000, label: 'Reviewer (10%)' },
+      { recipient: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED', amount: 700, percentage_bps: 7000, label: 'Lead Developer (70%)' },
+      { recipient: 'GCG5S6QWVRIIVSQWA5DF3X2Q2KQQ6KEHMAXZUMGFPX7YDGGA2X67TPEU', amount: 200, percentage_bps: 2000, label: 'Smart Contract Auditor (20%)' },
+      { recipient: 'GDWBHVJ7JGSCRTWL3OVCHZRZMOJ2BSZZSIOIPGGV5HXYG4FWFHNZPMVW', amount: 100, percentage_bps: 1000, label: 'Documentation Reviewer (10%)' },
     ],
     status: 'authorized',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    created_at: '2026-10-06T14:00:00Z',
+    updated_at: '2026-10-06T14:30:00Z',
   };
+  m1.settlement = s1;
 
-  initialMilestone.settlement = initialSettlement;
-
-  const initialEvent: ContractEvent = {
+  const e1: ContractEvent = {
     id: 1,
-    event_key: `init-evt-1`,
+    event_key: 'evt-settle-1',
     event_type: 'settlement_authorized',
     bounty_id: 1,
     milestone_id: 1,
     transaction_hash: 'c19ae884bb12a1332ec6af39fbb81be34a1ec2a4419019af1725ab0f3d4cfd88',
     ledger: 624180,
     payload: { amount: 1000, recipients: 3 },
-    created_at: new Date().toISOString(),
+    created_at: '2026-10-06T14:30:00Z',
+  };
+
+  // --- BOUNTY 2 (Active / Open with Partial Funding & Milestones) ---
+  const b2: Bounty = {
+    id: 2,
+    contract_id: SOROBAN_CONTRACT_ID,
+    title: 'Cross-Currency Oracle Integration (USDC & EURC)',
+    description:
+      'Integrate Reflector and Band protocol feeds to enable multi-asset valuation for developer bounties settled in stablecoins alongside native XLM.',
+    creator_address: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED',
+    target_amount: 2500,
+    funded_amount: 1500,
+    status: 'open',
+    created_at: '2026-10-06T12:00:00Z',
+    updated_at: '2026-10-07T09:15:00Z',
+  };
+
+  const m2_1: Milestone = {
+    id: 2,
+    bounty_id: 2,
+    contract_milestone_id: 1,
+    description: 'Milestone 1: Oracle Contract Interface & Price Aggregator Adapter',
+    reward_amount: 1000,
+    recipient_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
+    status: 'pending',
+    approval_threshold: 2,
+    approvals: 1,
+    rejections: 0,
+    submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/issues/7',
+    created_at: '2026-10-06T12:30:00Z',
+    updated_at: '2026-10-07T08:00:00Z',
+  };
+
+  const m2_2: Milestone = {
+    id: 3,
+    bounty_id: 2,
+    contract_milestone_id: 2,
+    description: 'Milestone 2: Frontend Currency Converter & Settlement Preview Widget',
+    reward_amount: 1500,
+    recipient_address: 'GCG5S6QWVRIIVSQWA5DF3X2Q2KQQ6KEHMAXZUMGFPX7YDGGA2X67TPEU',
+    status: 'pending',
+    approval_threshold: 2,
+    approvals: 0,
+    rejections: 0,
+    created_at: '2026-10-06T12:45:00Z',
+    updated_at: '2026-10-06T12:45:00Z',
+  };
+
+  // --- BOUNTY 3 (Completed / Fully Settled & Reconciled) ---
+  const b3: Bounty = {
+    id: 3,
+    contract_id: SOROBAN_CONTRACT_ID,
+    title: 'Cryptographic Audit Logging & State Reconciliation Engine',
+    description:
+      'Bi-directional reconciliation service verifying local database state against on-chain Soroban event logs with zero discrepancy tolerance.',
+    creator_address: 'GDWBHVJ7JGSCRTWL3OVCHZRZMOJ2BSZZSIOIPGGV5HXYG4FWFHNZPMVW',
+    target_amount: 1800,
+    funded_amount: 0,
+    status: 'completed',
+    created_at: '2026-10-05T09:00:00Z',
+    updated_at: '2026-10-07T11:00:00Z',
+  };
+
+  const m3: Milestone = {
+    id: 4,
+    bounty_id: 3,
+    contract_milestone_id: 1,
+    description: 'Milestone 1: Event Ingestion Pipeline & Reconciliation Service',
+    reward_amount: 1800,
+    recipient_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
+    status: 'paid',
+    approval_threshold: 2,
+    approvals: 2,
+    rejections: 0,
+    submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-backend/pull/4',
+    created_at: '2026-10-05T09:30:00Z',
+    updated_at: '2026-10-07T11:00:00Z',
+  };
+
+  const s3: Settlement = {
+    id: 2,
+    bounty_id: 3,
+    milestone_id: 4,
+    allocation_type: 'fixed',
+    total_amount: 1800,
+    recipients: [
+      { recipient: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX', amount: 1200, percentage_bps: 6666, label: 'Backend Architect' },
+      { recipient: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED', amount: 600, percentage_bps: 3334, label: 'Security Auditor' },
+    ],
+    status: 'settled',
+    transaction_hash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+    created_at: '2026-10-07T10:00:00Z',
+    updated_at: '2026-10-07T11:00:00Z',
+  };
+  m3.settlement = s3;
+
+  // --- BOUNTY 4 (Funded with Multi-Sig Quorum) ---
+  const b4: Bounty = {
+    id: 4,
+    contract_id: SOROBAN_CONTRACT_ID,
+    title: 'Multi-Signature Governance & Approval Quorum Portal',
+    description:
+      'Decentralized evaluator voting dashboard allowing DAO council members to cryptographically approve or reject milestone submissions with threshold consensus.',
+    creator_address: 'GCG5S6QWVRIIVSQWA5DF3X2Q2KQQ6KEHMAXZUMGFPX7YDGGA2X67TPEU',
+    target_amount: 3200,
+    funded_amount: 3200,
+    status: 'funded',
+    created_at: '2026-10-06T15:00:00Z',
+    updated_at: '2026-10-07T12:00:00Z',
+  };
+
+  const m4: Milestone = {
+    id: 5,
+    bounty_id: 4,
+    contract_milestone_id: 1,
+    description: 'Milestone 1: Soroban Multi-Sig Voter State & Weight Verification',
+    reward_amount: 1600,
+    recipient_address: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED',
+    status: 'approved',
+    approval_threshold: 3,
+    approvals: 3,
+    rejections: 0,
+    submission_reference: 'https://github.com/Stellar-Bounty-Treasury/stellar-bounty-contracts/issues/5',
+    created_at: '2026-10-06T15:30:00Z',
+    updated_at: '2026-10-07T12:00:00Z',
+  };
+
+  // --- BOUNTY 5 (Open / Seeking Contributors) ---
+  const b5: Bounty = {
+    id: 5,
+    contract_id: SOROBAN_CONTRACT_ID,
+    title: 'Zero-Knowledge Milestone Deliverable Verifier',
+    description:
+      'Explore zkWASM and Bulletproofs verification for sensitive enterprise bounties requiring deliverable privacy with verifiable on-chain settlement release.',
+    creator_address: 'GBDOSMGJGGPBIUAORRTYPEWPO5TXTXPQC7FLAP5ZZ4XVYHTDAFBCOMRX',
+    target_amount: 4500,
+    funded_amount: 2000,
+    status: 'open',
+    created_at: '2026-10-07T08:00:00Z',
+    updated_at: '2026-10-07T14:00:00Z',
+  };
+
+  const m5: Milestone = {
+    id: 6,
+    bounty_id: 5,
+    contract_milestone_id: 1,
+    description: 'Milestone 1: ZK Architecture Blueprint & Circuit Constraints Specification',
+    reward_amount: 2000,
+    recipient_address: 'GDWBHVJ7JGSCRTWL3OVCHZRZMOJ2BSZZSIOIPGGV5HXYG4FWFHNZPMVW',
+    status: 'pending',
+    approval_threshold: 2,
+    approvals: 0,
+    rejections: 0,
+    created_at: '2026-10-07T08:30:00Z',
+    updated_at: '2026-10-07T08:30:00Z',
   };
 
   return {
-    bounties: [{ ...initialBounty, milestones: [initialMilestone], settlements: [initialSettlement], events: [initialEvent] }],
-    milestones: { 1: [initialMilestone] },
-    verifications: { 1: [] },
-    settlements: { 1: [initialSettlement] },
-    events: { 1: [initialEvent] },
+    bounties: [
+      { ...b1, milestones: [m1], settlements: [s1], events: [e1] },
+      { ...b2, milestones: [m2_1, m2_2], settlements: [], events: [] },
+      { ...b3, milestones: [m3], settlements: [s3], events: [] },
+      { ...b4, milestones: [m4], settlements: [], events: [] },
+      { ...b5, milestones: [m5], settlements: [], events: [] },
+    ],
+    milestones: {
+      1: [m1],
+      2: [m2_1, m2_2],
+      3: [m3],
+      4: [m4],
+      5: [m5],
+    },
+    verifications: { 1: [], 2: [], 3: [], 4: [], 5: [] },
+    settlements: { 1: [s1], 3: [s3] },
+    events: { 1: [e1] },
   };
 }
 
