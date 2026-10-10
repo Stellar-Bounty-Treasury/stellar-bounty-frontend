@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { BountyCard } from './components/BountyCard';
+import { BountyCardSkeleton } from './components/BountyCardSkeleton';
 import { CreateBountyModal } from './components/CreateBountyModal';
 import { FundBountyModal } from './components/FundBountyModal';
 import { BountyDetailModal } from './components/BountyDetailModal';
@@ -240,9 +241,12 @@ export const App: React.FC = () => {
 
       {/* Bounty Dashboard Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-          Loading Stellar Bounties & Settlement Routers...
-        </div>
+        <main className="bounty-grid" id="bounty-grid-loading" aria-busy="true">
+          <span className="visually-hidden">Loading Stellar Bounties &amp; Settlement Routers...</span>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <BountyCardSkeleton key={`skeleton-${i}`} index={i} />
+          ))}
+        </main>
       ) : filteredBounties.length === 0 ? (
         <div
           className="glass-panel"
