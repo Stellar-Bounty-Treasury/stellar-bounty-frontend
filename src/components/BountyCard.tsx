@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bounty } from '../types';
 import { Copy, Check, ArrowUpRight, Target, ShieldCheck, ChevronRight } from 'lucide-react';
+import { formatAddress } from '../utils/formatters';
 
 interface BountyCardProps {
   bounty: Bounty;
@@ -15,9 +16,7 @@ export const BountyCard: React.FC<BountyCardProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
 
-  const shortenAddress = (addr: string) => {
-    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-  };
+  const shortenAddress = (addr: string) => formatAddress(addr);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();

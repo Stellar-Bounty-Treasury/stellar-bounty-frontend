@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settlement } from '../types';
+import { formatAddress } from '../utils/formatters';
 
 interface SettlementFlowVisualizerProps {
   settlement: Settlement;
@@ -119,7 +120,7 @@ export const SettlementFlowVisualizer: React.FC<SettlementFlowVisualizerProps> =
                 {r.amount} <span style={{ fontSize: '0.7rem' }}>XLM</span>
               </div>
               <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                {r.recipient.substring(0, 4)}...{r.recipient.substring(r.recipient.length - 4)}
+                {formatAddress(r.recipient)}
               </div>
               {r.percentage_bps && (
                 <div style={{ fontSize: '0.65rem', color: '#34d399', marginTop: '2px', fontWeight: 600 }}>

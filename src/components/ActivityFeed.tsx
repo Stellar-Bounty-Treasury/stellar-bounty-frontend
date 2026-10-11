@@ -11,6 +11,7 @@ import {
   PlusCircle,
   Zap,
 } from 'lucide-react';
+import { formatAddress, formatHash } from '../utils/formatters';
 
 interface ActivityFeedProps {
   events: ContractEvent[];
@@ -41,7 +42,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ events, loading }) =
     const p = evt.payload || {};
     switch (evt.event_type) {
       case 'bounty_created':
-        return `Bounty created by ${p.creator ? `${p.creator.slice(0, 4)}...${p.creator.slice(-4)}` : 'Creator'}`;
+        return `Bounty created by ${p.creator ? formatAddress(p.creator) : 'Creator'}`;
       case 'bounty_funded':
         return `Bounty funded with +${p.amount || ''} XLM`;
       case 'milestone_submitted':
@@ -138,7 +139,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ events, loading }) =
               }}
               title="View on Stellar Expert"
             >
-              <span>{evt.transaction_hash.slice(0, 6)}...</span>
+              <span>{formatHash(evt.transaction_hash)}</span>
               <ExternalLink size={12} />
             </a>
           )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet, Play } from 'lucide-react';
+import { formatAddress } from '../utils/formatters';
 
 interface NavbarProps {
   onOpenConnectModal: () => void;
@@ -11,9 +12,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoM
   const { isConnected, address, balance, disconnect, fundWithFriendbot, isLoading } = useWallet();
   const [copied, setCopied] = useState(false);
 
-  const shortenAddress = (addr: string) => {
-    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-  };
+  const shortenAddress = (addr: string) => formatAddress(addr);
 
   const handleCopy = () => {
     if (address) {
