@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EXPLORER_BASE_URL } from '../services/stellar';
+import { formatAddress } from '../utils/formatters';
 
 describe('Frontend Validation & Logic Tests', () => {
   describe('Contribution Amount Validation', () => {
@@ -52,14 +53,9 @@ describe('Frontend Validation & Logic Tests', () => {
   });
 
   describe('Wallet Address & Explorer Logic', () => {
-    function shortenAddress(addr: string): string {
-      if (!addr || addr.length < 8) return addr;
-      return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-    }
-
     it('shortens Stellar G address accurately', () => {
       const full = 'GBSVC3MFSXVVYNUP6MUNDSM37G4ED5JACUSG3OLDSPBOYIYM6XGL4OAB';
-      expect(shortenAddress(full)).toBe('GBSV...4OAB');
+      expect(formatAddress(full)).toBe('GBSV...4OAB');
     });
 
     it('generates correct Stellar Expert Explorer URL for transaction hash', () => {

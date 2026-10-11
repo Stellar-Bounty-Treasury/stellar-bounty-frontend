@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Milestone } from '../types';
 import { X, CheckCircle2, AlertCircle, Loader2, Send, ExternalLink, Key } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
+import { formatAddress } from '../utils/formatters';
 
 interface SubmitMilestoneModalProps {
   milestone: Milestone | null;
@@ -134,7 +135,7 @@ export const SubmitMilestoneModal: React.FC<SubmitMilestoneModalProps> = ({
             <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Milestone Goal:</div>
             <div style={{ fontWeight: 500 }}>{milestone.description}</div>
             <div style={{ marginTop: 8, fontSize: '0.78rem', color: '#38bdf8' }}>
-              Designated Recipient: {milestone.recipient_address.slice(0, 8)}...{milestone.recipient_address.slice(-6)}
+              Designated Recipient: {formatAddress(milestone.recipient_address, 8, 6)}
             </div>
           </div>
 
@@ -188,7 +189,7 @@ export const SubmitMilestoneModal: React.FC<SubmitMilestoneModalProps> = ({
           >
             <Key size={16} style={{ flexShrink: 0 }} />
             <span>
-              Signed with worker address: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Active Wallet'}
+              Signed with worker address: {address ? formatAddress(address, 6, 4) : 'Active Wallet'}
             </span>
           </div>
 

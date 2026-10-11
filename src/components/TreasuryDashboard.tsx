@@ -1,6 +1,7 @@
 import React from 'react';
 import { TreasuryStats } from '../types';
 import { SOROBAN_CONTRACT_ID } from '../services/stellar';
+import { formatAddress } from '../utils/formatters';
 
 interface TreasuryDashboardProps {
   stats: TreasuryStats;
@@ -105,7 +106,7 @@ export const TreasuryDashboard: React.FC<TreasuryDashboardProps> = ({
                 textDecoration: 'none',
               }}
             >
-              Contract: {SOROBAN_CONTRACT_ID.substring(0, 4)}...{SOROBAN_CONTRACT_ID.substring(SOROBAN_CONTRACT_ID.length - 4)} ↗
+              Contract: {formatAddress(SOROBAN_CONTRACT_ID)} ↗
             </a>
 
             {onRefresh && (

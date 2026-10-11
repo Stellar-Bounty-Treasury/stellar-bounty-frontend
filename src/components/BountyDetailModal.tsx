@@ -22,6 +22,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { CONTRACT_EXPLORER_BASE_URL, SOROBAN_CONTRACT_ID } from '../services/stellar';
+import { formatAddress } from '../utils/formatters';
 
 interface BountyDetailModalProps {
   bounty: Bounty | null;
@@ -222,7 +223,7 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#e2e8f0' }}>
-                {contractAddress.substring(0, 10)}...{contractAddress.substring(contractAddress.length - 8)}
+                {formatAddress(contractAddress, 10, 8)}
               </span>
               <button
                 onClick={handleCopyContract}

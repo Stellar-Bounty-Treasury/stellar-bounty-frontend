@@ -11,6 +11,7 @@ import {
   Coins,
 } from 'lucide-react';
 import { SettlementFlowVisualizer } from './SettlementFlowVisualizer';
+import { formatAddress } from '../utils/formatters';
 
 interface MilestoneCardProps {
   milestone: Milestone;
@@ -37,10 +38,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
   const approvalPercent = Math.min(100, Math.round((approvalCount / threshold) * 100));
   const isThresholdMet = approvalCount >= threshold;
 
-  const shortenAddress = (addr: string) => {
-    if (!addr || addr.length < 8) return addr;
-    return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-  };
+  const shortenAddress = (addr: string) => formatAddress(addr);
 
   const getStatusBadge = () => {
     switch (milestone.status) {
