@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bounty } from '../types';
 import { Copy, Check, ArrowUpRight, Target, ShieldCheck, ChevronRight } from 'lucide-react';
+import { CountdownTimer } from './CountdownTimer';
 
 interface BountyCardProps {
   bounty: Bounty;
@@ -47,10 +48,16 @@ export const BountyCard: React.FC<BountyCardProps> = ({
         <div className="card-header">
           <div>
             <h3 className="card-title">{bounty.title}</h3>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
               <span className="pill pill-network" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                 Soroban Escrow
               </span>
+              <CountdownTimer
+                deadline={bounty.deadline}
+                createdAt={bounty.created_at}
+                status={bounty.status}
+                id={`bounty-deadline-timer-${bounty.id}`}
+              />
             </div>
           </div>
           <span

@@ -20,6 +20,7 @@ export const CreateBountyModal: React.FC<CreateBountyModalProps> = ({
   const [description, setDescription] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
   const [creatorAddress, setCreatorAddress] = useState('');
+  const [deadline, setDeadline] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -60,12 +61,14 @@ export const CreateBountyModal: React.FC<CreateBountyModalProps> = ({
         description: description.trim(),
         target_amount: target,
         creator_address: creatorAddress.trim(),
+        deadline: deadline ? new Date(deadline).toISOString() : null,
       });
 
       onBountyCreated(newBounty);
       setTitle('');
       setDescription('');
       setTargetAmount('');
+      setDeadline('');
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to create bounty');
@@ -158,6 +161,22 @@ export const CreateBountyModal: React.FC<CreateBountyModalProps> = ({
                 Tip: Connect your wallet to automatically populate your creator address.
               </span>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="bounty-deadline-input">
+              Bounty Deadline (Optional)
+            </label>
+            <input
+              id="bounty-deadline-input"
+              type="datetime-local"
+              className="form-input"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: 4, display: 'block' }}>
+              Defaults to 14 days from creation if left blank.
+            </span>
           </div>
 
           <button

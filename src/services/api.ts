@@ -39,6 +39,7 @@ function getInitialFallbackState(): FallbackState {
     target_amount: 1000,
     funded_amount: 1000,
     status: 'funded',
+    deadline: '2026-10-24T18:00:00Z',
     created_at: '2026-10-06T10:00:00Z',
     updated_at: '2026-10-06T14:30:00Z',
   };
@@ -99,6 +100,7 @@ function getInitialFallbackState(): FallbackState {
     target_amount: 2500,
     funded_amount: 1500,
     status: 'open',
+    deadline: '2026-10-18T12:00:00Z',
     created_at: '2026-10-06T12:00:00Z',
     updated_at: '2026-10-07T09:15:00Z',
   };
@@ -145,6 +147,7 @@ function getInitialFallbackState(): FallbackState {
     target_amount: 1800,
     funded_amount: 0,
     status: 'completed',
+    deadline: '2026-10-12T12:00:00Z',
     created_at: '2026-10-05T09:00:00Z',
     updated_at: '2026-10-07T11:00:00Z',
   };
@@ -394,6 +397,7 @@ export const api = {
       target_amount: payload.target_amount,
       funded_amount: 0,
       status: 'open',
+      deadline: payload.deadline || null,
       created_at: now,
       updated_at: now,
       milestones: [],

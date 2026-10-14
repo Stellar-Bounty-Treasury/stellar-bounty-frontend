@@ -20,7 +20,9 @@ import {
   Check,
   CheckCircle2,
   RotateCcw,
+  Clock,
 } from 'lucide-react';
+import { CountdownTimer } from './CountdownTimer';
 import { CONTRACT_EXPLORER_BASE_URL, SOROBAN_CONTRACT_ID } from '../services/stellar';
 
 interface BountyDetailModalProps {
@@ -255,6 +257,42 @@ export const BountyDetailModal: React.FC<BountyDetailModalProps> = ({
               <span style={{ color: '#fbbf24' }}>{bounty.funded_amount}</span> / {bounty.target_amount} XLM
             </div>
           </div>
+        </div>
+
+        {/* Bounty Deadline Card */}
+        <div
+          style={{
+            padding: '12px 16px',
+            marginBottom: 20,
+            borderRadius: 12,
+            background: 'rgba(0, 0, 0, 0.25)',
+            border: '1px solid var(--border-color, rgba(255, 255, 255, 0.08))',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+          id="bounty-detail-deadline-card"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={16} color="#38bdf8" />
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>
+                Submission Deadline
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginTop: 2 }}>
+                {bounty.deadline ? new Date(bounty.deadline).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Standard 14-day escrow window'}
+              </div>
+            </div>
+          </div>
+          <CountdownTimer
+            deadline={bounty.deadline}
+            createdAt={bounty.created_at}
+            status={bounty.status}
+            variant="detailed"
+            id={`bounty-detail-countdown-${bounty.id}`}
+          />
         </div>
 
         {/* Tabs & Controls */}
