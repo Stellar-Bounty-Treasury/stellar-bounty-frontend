@@ -65,6 +65,7 @@ export interface Bounty {
   target_amount: number;
   funded_amount: number;
   status: 'open' | 'funded' | 'completed' | 'cancelled' | 'settled';
+  deadline?: string | null;
   created_at: string;
   updated_at: string;
   milestones?: Milestone[];
@@ -97,6 +98,7 @@ export interface CreateBountyPayload {
   description: string;
   creator_address: string;
   target_amount: number;
+  deadline?: string | null;
 }
 
 export interface CreateMilestonePayload {
