@@ -1,3 +1,4 @@
+import { ToastProvider } from './context/ToastContext';
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { BountyCard } from './components/BountyCard';
@@ -105,7 +106,8 @@ export const App: React.FC = () => {
   });
 
   return (
-    <div className="app-container">
+    <ToastProvider>
+      <div className="app-container">
       {/* Navigation */}
       <Navbar
         onOpenConnectModal={() => setIsConnectModalOpen(true)}
@@ -316,5 +318,6 @@ export const App: React.FC = () => {
         onClose={() => setIsVideoModalOpen(false)}
       />
     </div>
+    </ToastProvider>
   );
 };
