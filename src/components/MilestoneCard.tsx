@@ -1,3 +1,5 @@
+import { MilestoneTimeline } from './MilestoneTimeline';
+import { DisputeBadge } from './DisputeBadge';
 import React, { useState } from 'react';
 import { Milestone } from '../types';
 import { useWallet } from '../context/WalletContext';
@@ -106,6 +108,7 @@ export const MilestoneCard: React.FC<MilestoneCardProps> = ({
               Milestone #{milestone.contract_milestone_id}
             </span>
             {getStatusBadge()}
+            <DisputeBadge />
             {milestone.settlement && (
               <span
                 style={{
