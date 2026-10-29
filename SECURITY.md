@@ -36,3 +36,7 @@ Privately report vulnerabilities to:
 * **Non-Custodial Safety:** The frontend never stores, requests, or transmits private keys. All signing is delegated directly to user wallets (Freighter).
 * **Sanitization:** All dynamic bounty descriptions, links, and user inputs are strictly sanitized to prevent Cross-Site Scripting (XSS).
 * **Safe External Navigation:** Links leading to Stellar.Expert or GitHub include `rel="noreferrer noopener"` and `target="_blank"`.
+
+
+## Vulnerability Disclosure SLA
+Security reports are acknowledged within 24 hours. Valid critical findings are eligible for bounty awards.
