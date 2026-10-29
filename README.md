@@ -153,15 +153,27 @@ npm run build
 
 ## 🧪 Testing Suite
 
-The frontend suite validates critical business logic and allocation rules:
+The frontend suite validates critical business logic across **44 passing tests in 12 test suites**:
 * `src/test/validation.test.ts`: Validates bounty title, amounts, descriptions, Stellar addresses, and thresholds.
 * `src/test/settlementValidation.test.ts`: Tests multi-recipient allocations, percentage basis points summing to 10,000, fixed reward matching, duplicate recipient rejection, and address sanity.
 
 ---
+
+
+---
+
+## 🌐 Production Deployment
+
+The web application is pre-configured for automated continuous deployment:
+* **Netlify**: Configured via etlify.toml with SPA redirect rewrites and long-term immutable asset caching headers.
+* **Vercel**: Configured via ercel.json with rewrite rules to /index.html.
+* **Build Command**: pm run build (runs 	sc && vite build).
+* **Publish Directory**: dist/.
 
 ## 🤝 Community, Contributing & Governance
 
 * **Contributing Guidelines:** Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting pull requests.
 * **Code of Conduct:** Community interactions are governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 * **Security Policy:** To report vulnerabilities responsibly, review [SECURITY.md](SECURITY.md).
+* **Changelog:** See all releases and updates in [CHANGELOG.md](CHANGELOG.md).
 * **License:** This project is licensed under the [MIT License](LICENSE).
