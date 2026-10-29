@@ -1,3 +1,4 @@
+import { DemoModeProvider } from './context/DemoModeContext';
 import { EcosystemShowcase } from './components/EcosystemShowcase';
 import { Footer } from './components/Footer';
 import { ToastProvider } from './context/ToastContext';
@@ -108,6 +109,7 @@ export const App: React.FC = () => {
   });
 
   return (
+    <DemoModeProvider>
     <ToastProvider>
       <div className="app-container">
       {/* Navigation */}
@@ -321,5 +323,6 @@ export const App: React.FC = () => {
       />
     </div>
     </ToastProvider>
+    </DemoModeProvider>
   );
 };

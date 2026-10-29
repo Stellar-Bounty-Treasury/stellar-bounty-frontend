@@ -1,3 +1,7 @@
+import { DemoModeToggle } from './DemoModeToggle';
+import { PersonaSwitcher } from './PersonaSwitcher';
+import { JudgeQuickTour } from './JudgeQuickTour';
+import { OneClickFaucet } from './OneClickFaucet';
 import { ThemeToggle } from './ThemeToggle';
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
@@ -48,6 +52,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoM
       </div>
 
       <div className="navbar-actions">
+        <DemoModeToggle />
+        <PersonaSwitcher />
+        <OneClickFaucet />
+        <JudgeQuickTour />
         <NetworkBadge />
           <ThemeToggle />
         {onOpenVideoModal && (
