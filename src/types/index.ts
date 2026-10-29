@@ -89,7 +89,7 @@ export interface WalletState {
   balance: number | null;
   isLoading: boolean;
   error: string | null;
-  walletType: 'freighter' | 'testnet_signer' | null;
+  walletType: 'freighter' | 'albedo' | 'xbull' | 'testnet_signer' | null;
 }
 
 export interface CreateBountyPayload {

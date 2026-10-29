@@ -5,6 +5,8 @@ import { WalletState } from '../types';
 
 interface WalletContextType extends WalletState {
   connectFreighter: () => Promise<void>;
+  connectAlbedo: () => Promise<void>;
+  connectXbull: () => Promise<void>;
   connectTestnetKeypair: (secretOrNew?: string) => Promise<void>;
   disconnect: () => void;
   refreshBalance: () => Promise<void>;
@@ -108,6 +110,64 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+
+  // Connect Albedo Wallet
+  const connectAlbedo = async () => {
+    setWalletState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      if (typeof window !== 'undefined' && (window as any).albedo) {
+        const res = await (window as any).albedo.publicKey();
+        const address = res.pubkey;
+        const balance = await stellar.getXlmBalance(address);
+        setWalletState({
+          isConnected: true,
+          address,
+          balance,
+          isLoading: false,
+          error: null,
+          walletType: 'albedo',
+        });
+        setSecretKey(null);
+      } else {
+        throw new Error('Albedo wallet is not available. Please visit https://albedo.link to install or authorize.');
+      }
+    } catch (err: any) {
+      setWalletState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: err.message || 'Failed to connect Albedo wallet',
+      }));
+    }
+  };
+
+  // Connect xBull Wallet
+  const connectXbull = async () => {
+    setWalletState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      if (typeof window !== 'undefined' && (window as any).xBullSDK) {
+        const address = await (window as any).xBullSDK.getPublicKey();
+        const balance = await stellar.getXlmBalance(address);
+        setWalletState({
+          isConnected: true,
+          address,
+          balance,
+          isLoading: false,
+          error: null,
+          walletType: 'xbull',
+        });
+        setSecretKey(null);
+      } else {
+        throw new Error('xBull wallet extension is not detected. Visit https://xbull.app to install.');
+      }
+    } catch (err: any) {
+      setWalletState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: err.message || 'Failed to connect xBull wallet',
+      }));
+    }
+  };
+
   // Disconnect
   const disconnect = () => {
     setWalletState({
@@ -143,6 +203,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       value={{
         ...walletState,
         connectFreighter,
+        connectAlbedo,
+        connectXbull,
         connectTestnetKeypair,
         disconnect,
         refreshBalance,
