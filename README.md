@@ -1,5 +1,8 @@
 # 🏦 Stellar Bounty Treasury — Web Application
 
+> 🏆 **Hackathon Judge Quickstart**: Click **Demo Mode** in the navbar or read [docs/JUDGES_GUIDE.md](docs/JUDGES_GUIDE.md) for 1-click evaluation instructions!
+
+
 [![Stellar Testnet](https://img.shields.io/badge/Stellar-Testnet-blue.svg)](https://stellar.org)
 [![Soroban Escrow](https://img.shields.io/badge/Soroban-Smart%20Contracts-7c3aed.svg)](https://soroban.stellar.org)
 [![Netlify Status](https://img.shields.io/badge/Netlify-Deployed%20Live-00c7b7.svg)](https://stellar-bounty-treasury-2676.netlify.app)
