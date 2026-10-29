@@ -62,3 +62,9 @@ npm run dev
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+
+
+## Stellar Development Guidelines
+- Verify tests with `npm test`.
+- Verify builds with `npm run build`.
+- Adhere to conventional commit messages.
