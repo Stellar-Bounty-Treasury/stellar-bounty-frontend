@@ -1,3 +1,4 @@
+import { ThemeToggle } from './ThemeToggle';
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet, Play, Menu, X } from 'lucide-react';
@@ -48,6 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoM
 
       <div className="navbar-actions">
         <NetworkBadge />
+          <ThemeToggle />
         {onOpenVideoModal && (
           <button
             className="btn btn-secondary"
