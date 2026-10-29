@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet, Play } from 'lucide-react';
+import { Coins, Copy, Check, LogOut, Wallet, ShieldCheck, Droplet, Play, Menu, X } from 'lucide-react';
+import { NetworkBadge } from './NetworkBadge';
 
 interface NavbarProps {
   onOpenConnectModal: () => void;
@@ -9,6 +10,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoModal }) => {
   const { isConnected, address, balance, disconnect, fundWithFriendbot, isLoading } = useWallet();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const shortenAddress = (addr: string) => {
@@ -45,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenConnectModal, onOpenVideoM
       </div>
 
       <div className="navbar-actions">
+        <NetworkBadge />
         {onOpenVideoModal && (
           <button
             className="btn btn-secondary"
