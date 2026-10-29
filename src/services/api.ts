@@ -289,6 +289,60 @@ function saveFallbackState(state: FallbackState): void {
 }
 
 export const api = {
+
+  async getBountiesFiltered(params?: {
+    search?: string;
+    status?: string;
+    category?: string;
+    creator?: string;
+    min_amount?: number;
+    max_amount?: number;
+    page?: number;
+    limit?: number;
+  }): Promise<{ bounties: Bounty[]; total: number; page: number; limit: number; totalPages: number }> {
+    try {
+      const query = new URLSearchParams();
+      if (params?.search) query.set('search', params.search);
+      if (params?.status) query.set('status', params.status);
+      if (params?.category) query.set('category', params.category);
+      if (params?.creator) query.set('creator', params.creator);
+      if (params?.min_amount) query.set('min_amount', String(params.min_amount));
+      if (params?.max_amount) query.set('max_amount', String(params.max_amount));
+      if (params?.page) query.set('page', String(params.page));
+      if (params?.limit) query.set('limit', String(params.limit));
+
+      const res = await fetch(`${API_BASE_URL}/api/bounties?${query.toString()}`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+    const all = loadFallbackState().bounties;
+    return { bounties: all, total: all.length, page: 1, limit: 20, totalPages: 1 };
+  },
+
+  async simulateSorobanTx(txEnvelope: string): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/bounties/soroban/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tx: txEnvelope }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+    return {
+      success: true,
+      minResourceFee: '2500',
+      cpuInstructions: 75000,
+      memoryBytes: 32768,
+    };
+  },
+
   async getBounties(): Promise<Bounty[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/bounties`, {
