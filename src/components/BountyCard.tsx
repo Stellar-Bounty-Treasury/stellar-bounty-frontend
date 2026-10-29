@@ -1,3 +1,5 @@
+import { FundingProgressBar } from './FundingProgressBar';
+import { CategoryBadge } from './CategoryBadge';
 import React, { useState } from 'react';
 import { Bounty } from '../types';
 import { Copy, Check, ArrowUpRight, Target, ShieldCheck, ChevronRight } from 'lucide-react';
@@ -51,6 +53,7 @@ export const BountyCard: React.FC<BountyCardProps> = ({
               <span className="pill pill-network" style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
                 Soroban Escrow
               </span>
+              <CategoryBadge />
             </div>
           </div>
           <span
