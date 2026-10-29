@@ -1,3 +1,5 @@
+import { EcosystemShowcase } from './components/EcosystemShowcase';
+import { Footer } from './components/Footer';
 import { ToastProvider } from './context/ToastContext';
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
