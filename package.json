@@ -1,8 +1,22 @@
 {
   "name": "stellar-bounty-frontend",
   "private": true,
-  "version": "1.0.0",
+  "version": "4.0.0",
   "type": "module",
+  "description": "Production web application for Stellar Bounty Treasury featuring multi-wallet connector, Soroban gas simulation, 10,000 BPS settlement router, and interactive judge demo mode",
+  "keywords": [
+    "stellar",
+    "soroban",
+    "freighter-wallet",
+    "albedo",
+    "xbull",
+    "bounty-treasury",
+    "react",
+    "typescript",
+    "vite"
+  ],
+  "author": "Dev3DPrint <322404527+Dev3DPrint@users.noreply.github.com>",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
