@@ -321,7 +321,7 @@ export const api = {
       if (params?.limit) query.set('limit', String(params.limit));
 
       const res = await fetch(`${API_BASE_URL}/api/bounties?${query.toString()}`, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
         const json = await res.json();
@@ -355,7 +355,7 @@ export const api = {
   async getBounties(): Promise<Bounty[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/bounties`, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
         const data = await res.json();
@@ -368,7 +368,7 @@ export const api = {
   async getBounty(id: number): Promise<Bounty> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/bounties/${id}`, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
         const data = await res.json();
@@ -389,7 +389,7 @@ export const api = {
   async getTreasuryStats(): Promise<TreasuryStats> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/bounties/stats`, {
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(10000),
       });
       if (res.ok) {
         const data = await res.json();
@@ -566,13 +566,14 @@ export const api = {
           contract_milestone_id: Date.now() % 100000,
           ...payload,
         }),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to create milestone');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const bList = state.milestones[bountyId] || [];
@@ -611,13 +612,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to configure settlement');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const m = (state.milestones[bountyId] || []).find((item) => item.id === milestoneId);
@@ -655,13 +657,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to submit milestone');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     for (const [bId, list] of Object.entries(state.milestones)) {
@@ -686,13 +689,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to verify milestone');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     for (const [bId, list] of Object.entries(state.milestones)) {
@@ -736,18 +740,20 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tx_hash: payload.transaction_hash }),
-        signal: AbortSignal.timeout(4000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          milestone: data.data,
-          transaction_hash: payload.transaction_hash || 'tx-settled',
-          message: 'Payment released and settlement executed successfully.',
-          settlement: data.data.settlement,
-        };
+      const data = await handleApiResponse(res, 'Failed to release payment');
+      return {
+        milestone: data,
+        transaction_hash: payload.transaction_hash || 'tx-settled',
+        message: 'Payment released and settlement executed successfully.',
+        settlement: data.settlement,
+      };
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     for (const [bId, list] of Object.entries(state.milestones)) {
@@ -799,13 +805,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tx_hash: txHash }),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to refund bounty');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const b = state.bounties.find((item) => item.id === bountyId);
@@ -822,13 +829,14 @@ export const api = {
       const res = await fetch(`${API_BASE_URL}/api/bounties/${bountyId}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to complete bounty');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const b = state.bounties.find((item) => item.id === bountyId);
