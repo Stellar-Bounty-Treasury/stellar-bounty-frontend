@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '../context/WalletContext';
-import { stellar } from '../services/stellar';
+import { stellar, SOROBAN_CONTRACT_ID } from '../services/stellar';
 import { api } from '../services/api';
 import { Bounty } from '../types';
 import {
@@ -78,12 +78,13 @@ export const FundBountyModal: React.FC<FundBountyModalProps> = ({
     setStepStatus('Signing & submitting transaction to Stellar Testnet...');
 
     try {
-      // 5. Submit real payment on Stellar Testnet
+      // 5. Submit escrow funding transaction on Stellar Testnet
       const result = await stellar.submitContributionPayment(
         address,
         bounty.creator_address,
         parsedAmount,
-        secretKey || undefined
+        secretKey || undefined,
+        bounty.contract_id || SOROBAN_CONTRACT_ID
       );
 
       setStepStatus('Recording and verifying payment with backend...');

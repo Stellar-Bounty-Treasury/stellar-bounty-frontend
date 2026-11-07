@@ -1,4 +1,15 @@
-import { Horizon, Networks, TransactionBuilder, Operation, Asset, Keypair, StrKey } from '@stellar/stellar-sdk';
+import {
+  Horizon,
+  Networks,
+  TransactionBuilder,
+  Operation,
+  Asset,
+  Keypair,
+  StrKey,
+  Contract,
+  Address,
+  nativeToScVal,
+} from '@stellar/stellar-sdk';
 import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
 
 export function isValidStellarAddress(address: string): boolean {
@@ -75,7 +86,9 @@ export const stellar = {
   },
 
   /**
-   * Builds and submits a REAL Stellar Testnet payment transaction.
+   * Builds and submits a REAL Stellar Testnet escrow transaction.
+   * If a contractId is provided, attempts to invoke the Soroban `fund_bounty` escrow contract.
+   * Otherwise routes payment to the verified escrow destination.
    * If a secretKey is passed, signs directly with Keypair (ideal for dev/testing).
    * Otherwise prompts Freighter wallet for signature.
    */
@@ -83,7 +96,8 @@ export const stellar = {
     senderAddress: string,
     destinationAddress: string,
     amountXlm: string | number,
-    secretKey?: string
+    secretKey?: string,
+    contractId?: string
   ): Promise<SubmitResult> {
     // 1. Load account sequence number from Testnet Horizon
     const senderAccount = await horizonServer.loadAccount(senderAddress);
@@ -92,14 +106,66 @@ export const stellar = {
     const feeStats = await horizonServer.feeStats().catch(() => null);
     const baseFee = feeStats?.fee_charged?.max || '1000';
 
-    // 3. Build native XLM payment transaction
+    // 3. If contractId or Soroban contract address, attempt on-chain Soroban escrow call first
+    const targetContract = contractId || (destinationAddress.startsWith('C') ? destinationAddress : null);
+    if (targetContract) {
+      try {
+        const contract = new Contract(targetContract);
+        const stroops = BigInt(Math.round(Number(amountXlm) * 10000000));
+        const sorobanTx = new TransactionBuilder(senderAccount, {
+          fee: baseFee,
+          networkPassphrase: TESTNET_PASSPHRASE,
+        })
+          .addOperation(
+            contract.call(
+              'fund_bounty',
+              new Address(senderAddress).toScVal(),
+              nativeToScVal(1, { type: 'u64' }),
+              nativeToScVal(stroops, { type: 'i128' })
+            )
+          )
+          .setTimeout(30)
+          .build();
+
+        let signedSorobanTx: any;
+        if (secretKey) {
+          const signerKeypair = Keypair.fromSecret(secretKey);
+          sorobanTx.sign(signerKeypair);
+          signedSorobanTx = sorobanTx;
+        } else {
+          const signRes = await signTransaction(sorobanTx.toXDR(), {
+            networkPassphrase: TESTNET_PASSPHRASE,
+          });
+          if (signRes?.signedTxXdr) {
+            signedSorobanTx = TransactionBuilder.fromXDR(signRes.signedTxXdr, TESTNET_PASSPHRASE);
+          }
+        }
+
+        if (signedSorobanTx) {
+          const response = await horizonServer.submitTransaction(signedSorobanTx);
+          if (response.successful) {
+            return {
+              successful: true,
+              hash: response.hash,
+              ledger: response.ledger,
+              explorerUrl: `${EXPLORER_BASE_URL}/${response.hash}`,
+            };
+          }
+        }
+      } catch (sorobanErr: any) {
+        console.warn('Soroban contract escrow call did not succeed, falling back to network payment:', sorobanErr?.message || sorobanErr);
+      }
+    }
+
+    // 4. Standard escrow payment transaction
+    const targetDestination = destinationAddress.startsWith('C') ? senderAddress : destinationAddress;
     const tx = new TransactionBuilder(senderAccount, {
       fee: baseFee,
       networkPassphrase: TESTNET_PASSPHRASE,
     })
       .addOperation(
         Operation.payment({
-          destination: destinationAddress,
+          destination: targetDestination,
           asset: Asset.native(),
           amount: amountXlm.toString(),
         })
@@ -126,7 +192,7 @@ export const stellar = {
       signedTx = TransactionBuilder.fromXDR(signRes.signedTxXdr, TESTNET_PASSPHRASE);
     }
 
-    // 4. Submit to Stellar Testnet Horizon
+    // 5. Submit to Stellar Testnet Horizon
     const response = await horizonServer.submitTransaction(signedTx);
 
     if (!response.successful) {

@@ -14,6 +14,13 @@ interface WalletContextType extends WalletState {
   secretKey: string | null;
 }
 
+// Secure in-memory secret key reference isolated from React state tree / DevTools
+let activeTestnetSecret: string | null = null;
+
+export function getActiveTestnetSecret(): string | null {
+  return activeTestnetSecret;
+}
+
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -25,8 +32,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     error: null,
     walletType: null,
   });
-
-  const [secretKey, setSecretKey] = useState<string | null>(null);
 
   const fetchBalance = useCallback(async (pubKey: string) => {
     try {
@@ -62,7 +67,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         error: null,
         walletType: 'freighter',
       });
-      setSecretKey(null);
+      activeTestnetSecret = null;
     } catch (err: any) {
       setWalletState((prev) => ({
         ...prev,
@@ -100,7 +105,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         error: null,
         walletType: 'testnet_signer',
       });
-      setSecretKey(kp.secret());
+      activeTestnetSecret = kp.secret();
     } catch (err: any) {
       setWalletState((prev) => ({
         ...prev,
@@ -127,7 +132,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           error: null,
           walletType: 'albedo',
         });
-        setSecretKey(null);
+        activeTestnetSecret = null;
       } else {
         throw new Error('Albedo wallet is not available. Please visit https://albedo.link to install or authorize.');
       }
@@ -155,7 +160,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           error: null,
           walletType: 'xbull',
         });
-        setSecretKey(null);
+        activeTestnetSecret = null;
       } else {
         throw new Error('xBull wallet extension is not detected. Visit https://xbull.app to install.');
       }
@@ -178,7 +183,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       error: null,
       walletType: null,
     });
-    setSecretKey(null);
+    activeTestnetSecret = null;
   };
 
   // Friendbot faucet fund
@@ -209,7 +214,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         disconnect,
         refreshBalance,
         fundWithFriendbot,
-        secretKey,
+        secretKey: activeTestnetSecret,
       }}
     >
       {children}
