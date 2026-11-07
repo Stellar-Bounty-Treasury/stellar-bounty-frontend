@@ -182,10 +182,10 @@ The frontend suite validates critical business logic across **44 passing tests i
 ## 🌐 Production Deployment
 
 The web application is pre-configured for automated continuous deployment:
-* **Netlify**: Configured via etlify.toml with SPA redirect rewrites and long-term immutable asset caching headers.
-* **Vercel**: Configured via ercel.json with rewrite rules to /index.html.
-* **Build Command**: pm run build (runs 	sc && vite build).
-* **Publish Directory**: dist/.
+* **Netlify**: Configured via `netlify.toml` with SPA redirect rewrites and long-term immutable asset caching headers.
+* **Vercel**: Configured via `vercel.json` with rewrite rules to `/index.html`.
+* **Build Command**: `npm run build` (runs `tsc && vite build`).
+* **Publish Directory**: `dist/`.
 
 ## 🤝 Community, Contributing & Governance
 
