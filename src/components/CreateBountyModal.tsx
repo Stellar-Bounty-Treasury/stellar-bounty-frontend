@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWallet } from '../context/WalletContext';
 import { api } from '../services/api';
+import { isValidStellarAddress } from '../services/stellar';
 import { Bounty } from '../types';
 import { X, AlertCircle, PlusCircle, Loader2 } from 'lucide-react';
 
@@ -48,8 +49,8 @@ export const CreateBountyModal: React.FC<CreateBountyModalProps> = ({
       setError('Funding target must be a positive XLM amount.');
       return;
     }
-    if (!creatorAddress.trim()) {
-      setError('Creator Stellar address is required.');
+    if (!creatorAddress.trim() || !isValidStellarAddress(creatorAddress.trim())) {
+      setError('A valid Stellar Testnet address (starting with G, 56 characters) is required.');
       return;
     }
 
@@ -150,12 +151,17 @@ export const CreateBountyModal: React.FC<CreateBountyModalProps> = ({
               style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}
               placeholder="G..."
               value={creatorAddress}
+              readOnly={isConnected && !!address}
               onChange={(e) => setCreatorAddress(e.target.value)}
               required
             />
-            {!isConnected && (
+            {isConnected ? (
+              <span style={{ fontSize: '0.78rem', color: '#10b981', marginTop: 4, display: 'block' }}>
+                ✓ Locked to your connected wallet address.
+              </span>
+            ) : (
               <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: 4, display: 'block' }}>
-                Tip: Connect your wallet to automatically populate your creator address.
+                Tip: Connect your wallet to automatically populate and secure your creator address.
               </span>
             )}
           </div>

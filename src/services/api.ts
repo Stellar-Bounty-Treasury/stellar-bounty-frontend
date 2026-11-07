@@ -14,6 +14,15 @@ import { SOROBAN_CONTRACT_ID } from './stellar';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+async function handleApiResponse(res: Response, defaultErrorMsg: string): Promise<any> {
+  if (res.ok) {
+    const json = await res.json();
+    return json.data !== undefined ? json.data : json;
+  }
+  const errJson = await res.json().catch(() => ({}));
+  throw new Error(errJson.error || `${defaultErrorMsg} (HTTP ${res.status})`);
+}
+
 // --- Fallback Local Storage Layer for Netlify / Offline Deployments ---
 const STORAGE_KEY = 'stellar_bounty_treasury_data_v4';
 
@@ -428,13 +437,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, contract_id: SOROBAN_CONTRACT_ID }),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to create bounty');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const newId = state.bounties.length > 0 ? Math.max(...state.bounties.map((b) => b.id)) + 1 : 1;
@@ -480,13 +490,14 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(10000),
       });
-      if (res.ok) {
-        const data = await res.json();
-        return data.data;
+      return await handleApiResponse(res, 'Failed to record contribution');
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch') && !err.name?.includes('AbortError')) {
+        throw err;
       }
-    } catch {}
+    }
 
     const state = loadFallbackState();
     const b = state.bounties.find((item) => item.id === bountyId);
