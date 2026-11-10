@@ -9,6 +9,7 @@ import {
   Contract,
   Address,
   nativeToScVal,
+  rpc,
 } from '@stellar/stellar-sdk';
 import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
 
@@ -23,8 +24,11 @@ export const CONTRACT_EXPLORER_BASE_URL = 'https://stellar.expert/explorer/testn
 export const SOROBAN_CONTRACT_ID =
   import.meta.env.VITE_SOROBAN_CONTRACT_ID || 'CADMWQPCCQP27UHQU4JG3C6V5I3UFNNC4DVOMSK2GUJFA6Q2PNW36S52';
 export const SOROBAN_RPC_URL = 'https://soroban-testnet.stellar.org';
+export const ESCROW_VAULT_ADDRESS =
+  import.meta.env.VITE_ESCROW_VAULT_ADDRESS || 'GD6DQE75KKO6Y3SA76IXGQH2GFFUULPUTQUQ3LXIPRDJ66K2UUGDF2DN';
 
 export const horizonServer = new Horizon.Server(TESTNET_HORIZON_URL);
+export const sorobanServer = new rpc.Server(SOROBAN_RPC_URL);
 
 export interface SubmitResult {
   successful: boolean;
@@ -112,7 +116,7 @@ export const stellar = {
       try {
         const contract = new Contract(targetContract);
         const stroops = BigInt(Math.round(Number(amountXlm) * 10000000));
-        const sorobanTx = new TransactionBuilder(senderAccount, {
+        const rawSorobanTx = new TransactionBuilder(senderAccount, {
           fee: baseFee,
           networkPassphrase: TESTNET_PASSPHRASE,
         })
@@ -127,38 +131,50 @@ export const stellar = {
           .setTimeout(30)
           .build();
 
-        let signedSorobanTx: any;
-        if (secretKey) {
-          const signerKeypair = Keypair.fromSecret(secretKey);
-          sorobanTx.sign(signerKeypair);
-          signedSorobanTx = sorobanTx;
-        } else {
-          const signRes = await signTransaction(sorobanTx.toXDR(), {
-            networkPassphrase: TESTNET_PASSPHRASE,
-          });
-          if (signRes?.signedTxXdr) {
-            signedSorobanTx = TransactionBuilder.fromXDR(signRes.signedTxXdr, TESTNET_PASSPHRASE);
+        // Simulate on Soroban RPC to acquire footprint and resource fee estimates
+        const simRes = await sorobanServer.simulateTransaction(rawSorobanTx);
+        if (rpc.Api.isSimulationSuccess(simRes)) {
+          const preparedTx = rpc.assembleTransaction(rawSorobanTx, simRes).build();
+          let signedSorobanTx: any;
+          if (secretKey) {
+            const signerKeypair = Keypair.fromSecret(secretKey);
+            preparedTx.sign(signerKeypair);
+            signedSorobanTx = preparedTx;
+          } else {
+            const signRes = await signTransaction(preparedTx.toXDR(), {
+              networkPassphrase: TESTNET_PASSPHRASE,
+            });
+            if (signRes?.signedTxXdr) {
+              signedSorobanTx = TransactionBuilder.fromXDR(signRes.signedTxXdr, TESTNET_PASSPHRASE);
+            }
           }
-        }
 
-        if (signedSorobanTx) {
-          const response = await horizonServer.submitTransaction(signedSorobanTx);
-          if (response.successful) {
-            return {
-              successful: true,
-              hash: response.hash,
-              ledger: response.ledger,
-              explorerUrl: `${EXPLORER_BASE_URL}/${response.hash}`,
-            };
+          if (signedSorobanTx) {
+            const sendRes = await sorobanServer.sendTransaction(signedSorobanTx);
+            if (sendRes.status === 'PENDING') {
+              let getRes = await sorobanServer.getTransaction(sendRes.hash);
+              while (getRes.status === 'NOT_FOUND') {
+                await new Promise((r) => setTimeout(r, 1000));
+                getRes = await sorobanServer.getTransaction(sendRes.hash);
+              }
+              if (getRes.status === 'SUCCESS') {
+                return {
+                  successful: true,
+                  hash: sendRes.hash,
+                  ledger: getRes.ledger,
+                  explorerUrl: `${EXPLORER_BASE_URL}/${sendRes.hash}`,
+                };
+              }
+            }
           }
         }
       } catch (sorobanErr: any) {
-        console.warn('Soroban contract escrow call did not succeed, falling back to network payment:', sorobanErr?.message || sorobanErr);
+        console.warn('Soroban contract escrow execution failed, falling back to vault payment:', sorobanErr?.message || sorobanErr);
       }
     }
 
-    // 4. Standard escrow payment transaction
-    const targetDestination = destinationAddress.startsWith('C') ? senderAddress : destinationAddress;
+    // 4. Standard escrow payment transaction to verified escrow vault
+    const targetDestination = destinationAddress.startsWith('C') ? ESCROW_VAULT_ADDRESS : destinationAddress;
     const tx = new TransactionBuilder(senderAccount, {
       fee: baseFee,
       networkPassphrase: TESTNET_PASSPHRASE,

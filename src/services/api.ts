@@ -185,7 +185,7 @@ function getInitialFallbackState(): FallbackState {
       { recipient: 'GCETG2VIX2A2LRWI3FVIRV5VNOPP2FJQCDK6HYVTV3753L74JYRKV5ED', amount: 600, percentage_bps: 3334, label: 'Security Auditor' },
     ],
     status: 'settled',
-    transaction_hash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
+    transaction_hash: '0fcb3ec79bac12048b0380d5b2887c8ff312bd66e9e55f19b09b76ad3a9dc330',
     created_at: '2026-10-07T10:00:00Z',
     updated_at: '2026-10-07T11:00:00Z',
   };
